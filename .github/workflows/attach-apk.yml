@@ -1,0 +1,26 @@
+# Downloads the APK that EAS built (URL in mobile/release/apk-url.txt) and commits it as the release APK.
+name: Attach release APK
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/release/apk-url.txt']
+permissions:
+  contents: write
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download APK built by EAS
+        run: |
+          url="$(tr -d '[:space:]' < mobile/release/apk-url.txt)"
+          curl -fsSL --retry 3 -A "Mozilla/5.0" -o mobile/release/app-release.apk "$url"
+          ls -la mobile/release/
+          python3 -c "import zipfile; z=zipfile.ZipFile('mobile/release/app-release.apk'); assert 'AndroidManifest.xml' in z.namelist(); print('valid apk')"
+      - name: Commit APK
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add mobile/release/app-release.apk
+          git commit -m "Release APK: $(tr -d '[:space:]' < mobile/release/apk-url.txt)" || echo "no change"
+          git push
