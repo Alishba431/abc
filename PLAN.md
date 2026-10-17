@@ -36,14 +36,14 @@ Backend
 Mobile
 - [x] Store (catalogue, variant picker, cart, checkout, receipt), Roster management, Scoring entry
 - [x] Offline queue (SQLite, 5.14 action format) + online/offline/syncing banner
-- [ ] **First EAS APK build ~13:15** to prove the pipeline
+- [x] **First EAS APK build ~13:15** to prove the pipeline
 
 ## Window 4 — 13:45–14:45  → push by 14:40
 Backend
 - [x] `POST /audit/v1/offline-sync` (ordering, duplicates, rebased_append, server_wins)
-- [ ] Unit tests per area, `run_tests.sh`, real `COVERAGE.json`
-- [ ] README (run + demo accounts), TRACEABILITY.md, ADR.md (8 ADRs, needed for Day-2 viva)
-- [ ] Clean-machine check: `docker compose down -v && DAY1_SALT=x docker compose up -d --build`, /health < 120 s, 20-buyer burst test
+- [x] Unit tests per area, `run_tests.sh`, real `COVERAGE.json`
+- [x] README (run + demo accounts), TRACEABILITY.md, ADR.md (8 ADRs, needed for Day-2 viva)
+- [x] Clean-machine check: `docker compose down -v && DAY1_SALT=x docker compose up -d --build`, /health < 120 s, 20-buyer burst test
 Mobile
 - [ ] Final APK by **14:15** → `mobile/release/app-release.apk`; HCI polish (48 dp targets, empty states, plain-language errors)
 
