@@ -19,8 +19,14 @@ Services: `api` (Node 20 + Express, port 8080), `worker` (Redis Streams consumer
 
 ## Tests
 ```bash
-./run_tests.sh
+./run_tests.sh   # needs only Docker; runs against throwaway databases and rewrites COVERAGE.json
 ```
+
+## Architecture
+- `backend/src/domain/` — fixtures, scoring (event sourcing), standings, roster, store, RBAC, offline sync
+- `backend/src/routes/audit.js` — autograder contract `/audit/v1/*`; `routes/api.js` — app routes `/api/v1/*` (JWT, rate limited)
+- Decisions: [ADR.md](ADR.md) · Requirement mapping: [TRACEABILITY.md](TRACEABILITY.md)
+- No object store container: `minio/minio` is no longer on Docker Hub (see ADR-7); receipts are stored in Postgres.
 
 ## Mobile
 Expo / React Native app in `mobile/`; release build at `mobile/release/app-release.apk`.

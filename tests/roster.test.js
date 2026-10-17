@@ -37,7 +37,7 @@ test('setup and each ordered rule check', async () => {
   assert.strictEqual(await code(tr('v9', { effective_date: '2026-10-01' })), 'TRANSFER_WINDOW_CLOSED');
   assert.strictEqual(await code(tr('v10')), 'SQUAD_FULL');
   assert.strictEqual(await code(tr('v11', { player_id: 'p1', to_squad_id: 'sq-b' })), 'SQUAD_FULL');
-  assert.strictEqual(await code(tr('v12', { player_id: 'p3', from_squad_id: 'sq-b', to_squad_id: 'sq-a', effective_date: '2026-09-30' })), undefined);
+  assert.strictEqual((await tr('v12', { player_id: 'p3', from_squad_id: 'sq-b', to_squad_id: 'sq-a', effective_date: '2026-09-30' })).status, 201);
 });
 
 test('transfer on last window day with live match is deferred; replay and history', async () => {

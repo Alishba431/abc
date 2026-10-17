@@ -78,9 +78,10 @@ test('innings NRR (all-out uses full overs) and round-model map differential', a
   const x = s.table.find((t) => t.team_id === 'x');
   // x: 18 runs / 0.5 overs - 0 / 2 overs (y all out) = 36
   assert.strictEqual(x.diff, 36);
-  await h.call('POST', '/audit/v1/leagues', { league_id: 'lg-e', sport_id: 'esports', teams: ['p', 'q'], fixtures: [{ match_id: 'r1', home: 'p', away: 'q' }], qualification: { spots: 1 } });
-  await play('r1', 'p', 'q', 2, 1, 'round_win');
+  await h.call('POST', '/audit/v1/leagues', { league_id: 'lg-e', sport_id: 'esports', teams: ['p', 'q'], fixtures: [{ match_id: 'r1', home: 'q', away: 'p' }], qualification: { spots: 1 } });
+  await play('r1', 'q', 'p', 1, 2, 'round_win');
   const e = (await h.call('GET', '/audit/v1/standings/lg-e')).body;
+  assert.strictEqual(e.table[0].team_id, 'p');
   assert.strictEqual(e.table[0].diff, 1);
 });
 
