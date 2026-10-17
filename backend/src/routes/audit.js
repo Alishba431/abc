@@ -7,6 +7,7 @@ const { err, validation } = require('../errors');
 const { validateSport } = require('../domain/sports');
 const { appendEvent, scoreView } = require('../domain/events');
 const { createLeague, standings } = require('../domain/leagues');
+const { generate } = require('../domain/fixtures');
 
 const r = express.Router();
 
@@ -40,5 +41,7 @@ r.get('/score/:matchId', wrap(async (req, res) => res.json(await scoreView(req.p
 r.post('/leagues', wrap(async (req, res) => res.status(201).json(await createLeague(req.body))));
 
 r.get('/standings/:leagueId', wrap(async (req, res) => res.json(await standings(req.params.leagueId))));
+
+r.post('/fixtures', wrap(async (req, res) => res.status(200).json(generate(req.body))));
 
 module.exports = r;
