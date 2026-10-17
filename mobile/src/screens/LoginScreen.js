@@ -28,8 +28,8 @@ export default function LoginScreen({ navigation }) {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
-          <Image source={require('../../assets/icon.png')} style={styles.logo} accessibilityLabel="League Ops logo" />
-          <Text style={styles.brand} accessibilityRole="header">League Ops</Text>
+          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain"
+            accessibilityRole="header" accessibilityLabel="League Ops" />
           <Text style={styles.tagline}>Fixtures · Live scores · Clubs · Store</Text>
         </View>
         <View style={styles.sheet}>
@@ -48,7 +48,7 @@ export default function LoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   hero: { backgroundColor: theme.navy, alignItems: 'center', paddingTop: theme.space(6), paddingBottom: theme.space(7) },
-  logo: { width: 96, height: 96, borderRadius: 22, marginBottom: theme.space(2) },
+  logo: { width: 180, height: 180, marginBottom: theme.space(1) },
   brand: { fontSize: 34, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.5 },
   tagline: { fontSize: theme.font.small, color: theme.accent, fontWeight: '700', marginTop: 6 },
   sheet: { flex: 1, backgroundColor: theme.bg, marginTop: -theme.space(3), borderTopLeftRadius: 28, borderTopRightRadius: 28,
