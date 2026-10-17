@@ -56,7 +56,7 @@ export default function MatchScreen({ route, navigation }) {
           <Card>
             <Text style={styles.product}>{m.pinned_product.name}</Text>
             <Text style={styles.sub}>From {money(Math.min(...m.pinned_product.variants.map((v) => v.price_minor)))}</Text>
-            <Button title="View in store" onPress={() => navigation.navigate('Store')} />
+            <Button title="View in store" onPress={() => navigation.navigate('Main', { screen: 'Store' })} />
           </Card>
         </>
       ) : null}
