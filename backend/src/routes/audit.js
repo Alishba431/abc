@@ -11,6 +11,7 @@ const { generate } = require('../domain/fixtures');
 const { checkout, inventory } = require('../domain/store');
 const { authorize } = require('../domain/rbac');
 const roster = require('../domain/roster');
+const { offlineSync } = require('../domain/offline');
 const { signJwt, bearer } = require('../auth');
 
 const r = express.Router();
@@ -97,5 +98,7 @@ r.post('/rbac/clubs/:id/products', probe('club:products:write', 'club', 'id'));
 r.patch('/rbac/players/:id', probe('player:update', 'player', 'id'));
 r.get('/rbac/clubs/:id', probe('club:read', 'club', 'id'));
 r.get('/rbac/platform/config', probe('platform:config:read'));
+
+r.post('/offline-sync', wrap(async (req, res) => res.status(200).json(await offlineSync(req.body))));
 
 module.exports = r;

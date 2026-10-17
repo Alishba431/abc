@@ -40,8 +40,35 @@ async function seedDemo(c, seedValue) {
   }
 }
 
+// Demo roster league so the Club Manager can transfer / loan / release from the app.
+const ROSTER_LEAGUE = 'demo-roster-alpha';
+async function seedDemoRoster(c) {
+  await c.query('INSERT INTO roster_leagues(id, data) VALUES ($1,$2)', [ROSTER_LEAGUE, {
+    league_id: ROSTER_LEAGUE, tenant_id: 'tenant-alpha', sport_id: 'football',
+    transfer_window: { open: '2026-10-01', close: '2026-10-31' }, max_squad_size: 25, required_positions: { gk: 1 },
+    matches_in_progress: [],
+  }]);
+  const squads = [
+    { squad_id: 'sq-alpha-1', club_id: 'club-alpha-1', tenant_id: 'tenant-alpha', name: 'Alpha United' },
+    { squad_id: 'sq-alpha-2', club_id: 'club-alpha-2', tenant_id: 'tenant-alpha', name: 'Alpha Rovers' },
+  ];
+  for (const sq of squads) await c.query('INSERT INTO squads(id, league_id, data) VALUES ($1,$2,$3)', [sq.squad_id, ROSTER_LEAGUE, sq]);
+  const players = [
+    ['demo-p1', 'Hamza Saeed', 'gk', 'sq-alpha-1', 'captain'], ['demo-p2', 'Faisal Raza', 'gk', 'sq-alpha-1', 'substitute'],
+    ['demo-p3', 'Omar Farooq', 'df', 'sq-alpha-1', 'vice_captain'], ['demo-p4', 'Talha Javed', 'mf', 'sq-alpha-1', 'starter'],
+    ['demo-p5', 'Zain Malik', 'fw', 'sq-alpha-1', 'starter'], ['demo-p6', 'Asad Mehmood', 'gk', 'sq-alpha-2', 'captain'],
+    ['demo-p7', 'Kashif Noor', 'mf', 'sq-alpha-2', 'starter'],
+  ];
+  for (const [id, name, position, squad, role] of players) {
+    await c.query('INSERT INTO players(id, league_id, data) VALUES ($1,$2,$3)', [id, ROSTER_LEAGUE, {
+      player_id: id, name, position, role, initial_squad_id: squad, squad_id: squad, parent_squad_id: null,
+      registration_type: 'initial', start_date: null, loan_end_date: null,
+    }]);
+  }
+}
+
 const TEAM_NAMES = {
   'club-alpha-1': 'Alpha United', 'club-alpha-2': 'Alpha Rovers', 'alpha-falcons': 'Alpha Falcons', 'alpha-titans': 'Alpha Titans',
 };
 
-module.exports = { seedDemo, TEAM_NAMES, DEMO_LEAGUE: LEAGUE };
+module.exports = { seedDemo, seedDemoRoster, TEAM_NAMES, DEMO_LEAGUE: LEAGUE, ROSTER_LEAGUE };
