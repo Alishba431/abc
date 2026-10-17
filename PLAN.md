@@ -13,8 +13,8 @@ Backend
 - [x] Canonical JSON + HMAC signer, verified against Appendix A test vector 1
 - [x] Standard error body, 413 for >1 MB, 400 for bad JSON
 Mobile
-- [ ] `npx create-expo-app mobile`, navigation shell (tabs: Fixtures, Standings, Store, Club, Sync), Settings screen with server URL
-- [ ] Login screen → `POST /api/v1/auth/login`, token in expo-secure-store
+- [x] `npx create-expo-app mobile`, navigation shell (tabs: Fixtures, Standings, Store, Club, Sync), Settings screen with server URL
+- [x] Login screen → `POST /api/v1/auth/login`, token in expo-secure-store
 
 ## Window 2 — 11:45–12:45  → push by 12:40
 Backend
