@@ -2,6 +2,7 @@
 import NetInfo from '@react-native-community/netinfo';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSync } from '../SyncContext';
 import { theme } from '../theme';
 
 export function useOnline() {
@@ -10,8 +11,8 @@ export function useOnline() {
   return online;
 }
 
-export default function SyncBanner({ syncing = false, pending = 0 }) {
-  const online = useOnline();
+export default function SyncBanner() {
+  const { online, syncing, pending } = useSync();
   const state = syncing ? 'syncing' : online ? 'online' : 'offline';
   const cfg = {
     online: { bg: theme.success, label: '● Online' },

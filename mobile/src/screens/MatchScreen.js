@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../AuthContext';
 import { Button, Card, Loading, Message } from '../components/ui';
 import { money, STATUS_LABEL } from '../format';
 import { theme } from '../theme';
@@ -10,6 +11,8 @@ const EVENT_LABEL = { match_init: 'Match created', match_start: 'Kick-off', matc
 
 export default function MatchScreen({ route, navigation }) {
   const { matchId } = route.params;
+  const { user } = useAuth();
+  const canScore = user.role === 'league_organizer' || user.role === 'super_admin';
   const q = useCached('match:' + matchId, `/api/v1/matches/${matchId}`, { pollMs: 3000 });
   if (q.loading) return <Loading label="Loading match…" />;
   if (!q.data) return <Message text={q.error} />;
@@ -35,6 +38,7 @@ export default function MatchScreen({ route, navigation }) {
         {m.home.overs ? <Text style={styles.sub}>Overs {m.home.overs} · {m.away.overs}</Text> : null}
       </Card>
 
+      {canScore ? <Button title="Record score / correct event" onPress={() => navigation.navigate('Scoring', { matchId })} /> : null}
       <Text style={styles.h}>Timeline</Text>
       <Card>
         {m.events.length === 0 ? <Text style={styles.sub}>Nothing has happened yet.</Text> : null}

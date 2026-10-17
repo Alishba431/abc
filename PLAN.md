@@ -28,19 +28,19 @@ Mobile
 
 ## Window 3 — 12:45–13:45  → push by 13:40
 Backend
-- [ ] Checkout + inventory (atomic reserve, mock gateway, signed receipt, PDF, Redis Stream event)
-- [ ] RBAC: `/rbac-matrix`, 7 probe routes, policy matrix, JWT verify (alg none / tamper / expiry → 401)
-- [ ] `/api/v1/ping` rate limiter (100 / rolling 10 s / IP, `Retry-After`)
-- [ ] Roster setup / transfer / history (8 ordered checks, loans, deferred, audit trail)
+- [x] Checkout + inventory (atomic reserve, mock gateway, signed receipt, PDF, Redis Stream event)
+- [x] RBAC: `/rbac-matrix`, 7 probe routes, policy matrix, JWT verify (alg none / tamper / expiry → 401)
+- [x] `/api/v1/ping` rate limiter (100 / rolling 10 s / IP, `Retry-After`)
+- [x] Roster setup / transfer / history (8 ordered checks, loans, deferred, audit trail)
 - [ ] **Before 13:00:** written questions to organizers (MinIO, EAS build)
 Mobile
-- [ ] Store (catalogue, variant picker, cart, checkout, receipt), Roster management, Scoring entry
-- [ ] Offline queue (SQLite, 5.14 action format) + online/offline/syncing banner
+- [x] Store (catalogue, variant picker, cart, checkout, receipt), Roster management, Scoring entry
+- [x] Offline queue (SQLite, 5.14 action format) + online/offline/syncing banner
 - [ ] **First EAS APK build ~13:15** to prove the pipeline
 
 ## Window 4 — 13:45–14:45  → push by 14:40
 Backend
-- [ ] `POST /audit/v1/offline-sync` (ordering, duplicates, rebased_append, server_wins)
+- [x] `POST /audit/v1/offline-sync` (ordering, duplicates, rebased_append, server_wins)
 - [ ] Unit tests per area, `run_tests.sh`, real `COVERAGE.json`
 - [ ] README (run + demo accounts), TRACEABILITY.md, ADR.md (8 ADRs, needed for Day-2 viva)
 - [ ] Clean-machine check: `docker compose down -v && DAY1_SALT=x docker compose up -d --build`, /health < 120 s, 20-buyer burst test

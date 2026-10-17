@@ -9,19 +9,21 @@ import { AuthProvider, useAuth } from './src/AuthContext';
 import SyncBanner from './src/components/SyncBanner';
 import { Loading } from './src/components/ui';
 import LoginScreen from './src/screens/LoginScreen';
-import makePlaceholder from './src/screens/Placeholder';
 import SettingsScreen from './src/screens/SettingsScreen';
 import FixturesScreen from './src/screens/FixturesScreen';
 import MatchScreen from './src/screens/MatchScreen';
 import StandingsScreen from './src/screens/StandingsScreen';
 import ClubScreen from './src/screens/ClubScreen';
+import StoreScreen from './src/screens/StoreScreen';
+import RosterScreen from './src/screens/RosterScreen';
+import ScoringScreen from './src/screens/ScoringScreen';
+import SyncScreen from './src/screens/SyncScreen';
+import { SyncProvider } from './src/SyncContext';
 import { theme } from './src/theme';
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
-const Store = makePlaceholder('Store', 'The club store is coming soon.');
-const Sync = makePlaceholder('Nothing waiting to sync', 'Changes you make offline are listed here.');
 
 const tabIcon = (glyph) => ({ color }) => <Text style={{ color, fontSize: 18 }} accessibilityElementsHidden>{glyph}</Text>;
 
@@ -30,11 +32,12 @@ function tabsFor(role) {
   const tabs = [
     { name: 'Fixtures', component: FixturesScreen, icon: '📅' },
     { name: 'Standings', component: StandingsScreen, icon: '🏆' },
-    { name: 'Store', component: Store, icon: '🛒' },
+    { name: 'Store', component: StoreScreen, icon: '🛒' },
     { name: 'Club', component: ClubScreen, icon: '🏟' },
   ];
+  if (role === 'club_manager' || role === 'super_admin') tabs.push({ name: 'Roster', component: RosterScreen, icon: '👥' });
   if (role === 'league_organizer' || role === 'club_manager' || role === 'super_admin') {
-    tabs.push({ name: 'Sync', component: Sync, icon: '⟳' });
+    tabs.push({ name: 'Sync', component: SyncScreen, icon: '⟳' });
   }
   tabs.push({ name: 'Settings', component: SettingsScreen, icon: '⚙' });
   return tabs;
@@ -68,6 +71,7 @@ function Root() {
         <>
           <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="Match" component={MatchScreen} options={({ route }) => ({ title: route.params.title || 'Match' })} />
+          <Stack.Screen name="Scoring" component={ScoringScreen} options={{ title: 'Record score' }} />
         </>
       ) : (
         <>
@@ -83,12 +87,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        <SyncProvider>
         <NavigationContainer>
           <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
             <StatusBar style="dark" />
             <Root />
           </SafeAreaView>
         </NavigationContainer>
+        </SyncProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

@@ -80,8 +80,9 @@ r.get('/matches/:id', wrap(async (req, res) => {
   const productId = pin.rowCount ? pin.rows[0].value : 'prod-jersey-001';
   const prod = await pool.query('SELECT id, data FROM products WHERE id = $1', [productId]);
   const variants = await pool.query('SELECT id, price_minor, stock, data FROM variants WHERE product_id = $1 ORDER BY id', [productId]);
+  const sport = (await pool.query('SELECT config FROM sports WHERE id = $1', [s.sport_id])).rows[0].config;
   res.json({
-    ...s,
+    ...s, scoring_events: Object.keys(sport.scoring_events), scoring_model: sport.scoring_model,
     home: { ...s.home, name: teamName(s.home.team_id) }, away: { ...s.away, name: teamName(s.away.team_id) },
     pinned_product: prod.rowCount ? { product_id: productId, ...prod.rows[0].data,
       variants: variants.rows.map((v) => ({ variant_id: v.id, price_minor: v.price_minor, stock: v.stock, ...v.data })) } : null,
