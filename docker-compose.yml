@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nascon
+      POSTGRES_PASSWORD: nascon
+      POSTGRES_DB: nascon
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nascon -d nascon"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  api:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      DAY1_SALT: ${DAY1_SALT}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-jwt-secret}
+      DATABASE_URL: postgres://nascon:nascon@postgres:5432/nascon
+      REDIS_URL: redis://redis:6379
+      PORT: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+  worker:
+    build: ./backend
+    command: ["node", "src/worker.js"]
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
