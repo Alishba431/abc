@@ -18,13 +18,13 @@ Mobile
 
 ## Window 2 — 11:45–12:45  → push by 12:40
 Backend
-- [ ] `POST /audit/v1/sports` (mystery sport validation)
-- [ ] `POST /audit/v1/events` + `GET /audit/v1/score/{id}` (event-sourced, compensation, idempotency, innings/round limits)
-- [ ] `POST /audit/v1/leagues` + `GET /audit/v1/standings/{id}` (recursive tie-break, H2H, NRR, clinched/eliminated)
-- [ ] `POST /audit/v1/fixtures`: round robin, swiss, single elim, double elim
+- [x] `POST /audit/v1/sports` (mystery sport validation)
+- [x] `POST /audit/v1/events` + `GET /audit/v1/score/{id}` (event-sourced, compensation, idempotency, innings/round limits)
+- [x] `POST /audit/v1/leagues` + `GET /audit/v1/standings/{id}` (recursive tie-break, H2H, NRR, clinched/eliminated)
+- [x] `POST /audit/v1/fixtures`: round robin, swiss, single elim, double elim
 Mobile
-- [ ] Fixtures list, Match detail (score + timeline, polling/SSE), Standings table
-- [ ] SQLite cache for fixtures / standings / club profile
+- [x] Fixtures list, Match detail (score + timeline, polling/SSE), Standings table
+- [x] SQLite cache for fixtures / standings / club profile
 
 ## Window 3 — 12:45–13:45  → push by 13:40
 Backend
