@@ -3,7 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/AuthContext';
 import SyncBanner from './src/components/SyncBanner';
@@ -25,21 +26,23 @@ const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
 
-const tabIcon = (glyph) => ({ color }) => <Text style={{ color, fontSize: 18 }} accessibilityElementsHidden>{glyph}</Text>;
+const tabIcon = (name) => ({ color, focused, size }) => (
+  <Ionicons name={focused ? name : `${name}-outline`} size={size} color={color} accessibilityElementsHidden />
+);
 
 // Tabs shown per role: each role sees only what it can use.
 function tabsFor(role) {
   const tabs = [
-    { name: 'Fixtures', component: FixturesScreen, icon: '📅' },
-    { name: 'Standings', component: StandingsScreen, icon: '🏆' },
-    { name: 'Store', component: StoreScreen, icon: '🛒' },
-    { name: 'Club', component: ClubScreen, icon: '🏟' },
+    { name: 'Fixtures', component: FixturesScreen, icon: 'calendar' },
+    { name: 'Standings', component: StandingsScreen, icon: 'trophy' },
+    { name: 'Store', component: StoreScreen, icon: 'cart' },
+    { name: 'Club', component: ClubScreen, icon: 'shield' },
   ];
-  if (role === 'club_manager' || role === 'super_admin') tabs.push({ name: 'Roster', component: RosterScreen, icon: '👥' });
+  if (role === 'club_manager' || role === 'super_admin') tabs.push({ name: 'Roster', component: RosterScreen, icon: 'people' });
   if (role === 'league_organizer' || role === 'club_manager' || role === 'super_admin') {
-    tabs.push({ name: 'Sync', component: SyncScreen, icon: '⟳' });
+    tabs.push({ name: 'Sync', component: SyncScreen, icon: 'sync' });
   }
-  tabs.push({ name: 'Settings', component: SettingsScreen, icon: '⚙' });
+  tabs.push({ name: 'Settings', component: SettingsScreen, icon: 'settings' });
   return tabs;
 }
 
@@ -49,9 +52,12 @@ function MainTabs() {
     <View style={{ flex: 1 }}>
       <SyncBanner />
       <Tabs.Navigator screenOptions={{
-        tabBarActiveTintColor: theme.primary, tabBarInactiveTintColor: theme.muted,
-        tabBarStyle: { minHeight: 60 }, tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-        headerTitleStyle: { fontWeight: '700' },
+        tabBarActiveTintColor: theme.primary, tabBarInactiveTintColor: '#64748B',
+        tabBarStyle: { minHeight: 64, paddingTop: 6, paddingBottom: 8, borderTopWidth: 0, ...theme.shadow },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
+        headerStyle: { backgroundColor: theme.navy }, headerTintColor: '#FFFFFF',
+        headerTitleStyle: { fontWeight: '800', fontSize: 20 }, headerShadowVisible: false,
+        sceneStyle: { backgroundColor: theme.bg },
       }}>
         {tabsFor(user.role).map((t) => (
           <Tabs.Screen key={t.name} name={t.name} component={t.component}
@@ -66,7 +72,10 @@ function Root() {
   const { loading, user } = useAuth();
   if (loading) return <Loading label="Starting…" />;
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: theme.navy }, headerTintColor: '#FFFFFF',
+      headerTitleStyle: { fontWeight: '800' }, headerShadowVisible: false, contentStyle: { backgroundColor: theme.bg },
+    }}>
       {user ? (
         <>
           <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
@@ -89,8 +98,8 @@ export default function App() {
       <AuthProvider>
         <SyncProvider>
         <NavigationContainer>
-          <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-            <StatusBar style="dark" />
+          <SafeAreaView style={{ flex: 1, backgroundColor: theme.navy }} edges={['top']}>
+            <StatusBar style="light" />
             <Root />
           </SafeAreaView>
         </NavigationContainer>

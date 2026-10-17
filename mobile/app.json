@@ -11,10 +11,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#0B1F4B"
       },
       "package": "com.leagueops.app",
       "versionCode": 1
@@ -41,6 +41,11 @@
         "projectId": "860a1e85-f95b-475a-8307-e0ee8f7d59dc"
       }
     },
-    "owner": "alishbar"
+    "owner": "alishbar",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B1F4B"
+    }
   }
 }

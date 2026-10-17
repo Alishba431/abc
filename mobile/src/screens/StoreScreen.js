@@ -127,7 +127,7 @@ export default function StoreScreen() {
               onPress={() => setCard(c.token)} />
           ))}
           <View style={{ marginTop: theme.space(2) }}>
-            <Button title={`Buy now · ${money(subtotal)}`} onPress={confirmPay} loading={busy} />
+            <Button title={`Buy now · ${money(subtotal)}`} variant="accent" onPress={confirmPay} loading={busy} />
           </View>
         </>
       ) : null}

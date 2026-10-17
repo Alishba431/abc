@@ -53,11 +53,12 @@ export default function FixturesScreen({ navigation }) {
 const styles = StyleSheet.create({
   stale: { backgroundColor: '#FEF0C7', color: theme.text, padding: theme.space(1), textAlign: 'center', fontSize: theme.font.small },
   card: { backgroundColor: theme.card, borderRadius: theme.radius, padding: theme.space(2), marginBottom: theme.space(1.5),
-    borderWidth: 1, borderColor: theme.border, minHeight: theme.touch },
+    minHeight: theme.touch, ...theme.shadow },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  badge: { fontSize: 12, fontWeight: '700', color: theme.muted, textTransform: 'uppercase' },
-  live: { color: theme.danger },
+  badge: { fontSize: 11, fontWeight: '800', color: theme.primary, textTransform: 'uppercase', letterSpacing: 0.8,
+    backgroundColor: theme.primarySoft, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, overflow: 'hidden' },
+  live: { color: '#FFFFFF', backgroundColor: theme.danger },
   time: { fontSize: theme.font.small, color: theme.muted },
   team: { fontSize: theme.font.body, color: theme.text, fontWeight: '600', flex: 1, marginRight: 8 },
-  score: { fontSize: 20, fontWeight: '800', color: theme.text, minWidth: 28, textAlign: 'right' },
+  score: { fontSize: 22, fontWeight: '900', color: theme.navy, minWidth: 28, textAlign: 'right' },
 });

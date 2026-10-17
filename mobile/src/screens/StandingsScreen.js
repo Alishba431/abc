@@ -48,15 +48,15 @@ export default function StandingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  table: { backgroundColor: theme.card, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.border, padding: theme.space(1) },
+  table: { backgroundColor: theme.card, borderRadius: theme.radius, padding: theme.space(1), ...theme.shadow },
   caption: { fontSize: theme.font.small, color: theme.muted, padding: theme.space(1) },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: theme.touch, borderBottomWidth: 1, borderBottomColor: '#EEF0F4' },
-  head: { minHeight: 32 },
+  head: { minHeight: 36, backgroundColor: theme.primarySoft, borderRadius: 10, borderBottomWidth: 0 },
   c: { width: 30, textAlign: 'center', fontSize: theme.font.small, color: theme.text },
   pos: { width: 24, fontWeight: '700' },
   name: { flex: 1, paddingHorizontal: 4 },
   teamName: { fontSize: theme.font.small, fontWeight: '700', color: theme.text },
   qual: { fontSize: 12, color: theme.muted },
-  pts: { fontWeight: '800', width: 36 },
+  pts: { fontWeight: '900', width: 36, color: theme.navy },
   legend: { fontSize: 12, color: theme.muted, padding: theme.space(1) },
 });

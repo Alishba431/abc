@@ -26,8 +26,8 @@ export default function MatchScreen({ route, navigation }) {
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={{ padding: theme.space(2) }}>
       {q.stale ? <Message kind="info" text={savedLabel(q.updatedAt)} /> : null}
-      <Card style={{ alignItems: 'center' }}>
-        <Text style={[styles.status, m.status === 'in_progress' && { color: theme.danger }]}>
+      <Card style={styles.board}>
+        <Text style={[styles.status, m.status === 'in_progress' && styles.liveChip]}>
           {m.status === 'in_progress' ? '● ' : ''}{STATUS_LABEL[m.status]}
         </Text>
         <View style={styles.scoreRow} accessibilityLabel={`${m.home.name} ${m.home.score}, ${m.away.name} ${m.away.score}`}>
@@ -35,7 +35,7 @@ export default function MatchScreen({ route, navigation }) {
           <Text style={styles.score}>{m.home.score} – {m.away.score}</Text>
           <Text style={styles.side} numberOfLines={2}>{m.away.name}</Text>
         </View>
-        {m.home.overs ? <Text style={styles.sub}>Overs {m.home.overs} · {m.away.overs}</Text> : null}
+        {m.home.overs ? <Text style={[styles.sub, { color: '#CBD5E1' }]}>Overs {m.home.overs} · {m.away.overs}</Text> : null}
       </Card>
 
       {canScore ? <Button title="Record score / correct event" onPress={() => navigation.navigate('Scoring', { matchId })} /> : null}
@@ -65,10 +65,13 @@ export default function MatchScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  status: { fontSize: theme.font.small, fontWeight: '700', color: theme.muted, textTransform: 'uppercase' },
+  board: { alignItems: 'center', backgroundColor: theme.navy, paddingVertical: theme.space(3) },
+  status: { fontSize: 12, fontWeight: '800', color: '#CBD5E1', textTransform: 'uppercase', letterSpacing: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' },
+  liveChip: { backgroundColor: theme.danger, color: '#FFFFFF' },
   scoreRow: { flexDirection: 'row', alignItems: 'center', marginVertical: theme.space(2) },
-  side: { flex: 1, fontSize: theme.font.body, fontWeight: '600', textAlign: 'center', color: theme.text },
-  score: { fontSize: theme.font.score, fontWeight: '800', color: theme.text, marginHorizontal: theme.space(1) },
+  side: { flex: 1, fontSize: theme.font.body, fontWeight: '700', textAlign: 'center', color: '#FFFFFF' },
+  score: { fontSize: theme.font.score, fontWeight: '900', color: theme.accent, marginHorizontal: theme.space(1) },
   sub: { fontSize: theme.font.small, color: theme.muted },
   h: { fontSize: 18, fontWeight: '700', color: theme.text, marginVertical: theme.space(1) },
   event: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEF0F4' },
