@@ -8,7 +8,8 @@ if (!process.env.DAY1_SALT) console.warn('WARNING: DAY1_SALT is not set; signatu
   await waitForDb();
   await bootstrap();
   const port = Number(process.env.PORT || 8080);
-  app.listen(port, () => console.log(`api listening on ${port}`));
+  const server = app.listen(port, () => console.log(`api listening on ${port}`));
+  require('./realtime').attach(server);
 })().catch((e) => {
   console.error(e);
   process.exit(1);

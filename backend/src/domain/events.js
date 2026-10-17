@@ -5,6 +5,7 @@ const { canonical, sign } = require('../sign');
 const { withLock } = require('../util');
 const { Checker, isObj, isId, isInt, isStr } = require('../validate');
 const { project, scoreLimitError } = require('./scoring');
+const { publish } = require('../queue');
 
 const TYPES = ['match_init', 'match_start', 'score', 'discipline', 'tiebreak_winner', 'match_end', 'compensation'];
 const COMPENSABLE = ['score', 'discipline', 'tiebreak_winner'];
@@ -149,6 +150,7 @@ async function appendEvent(b) {
       `INSERT INTO events(match_id, seq, event_id, type, payload, body_key, signature, compensates)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [match.id, seq, b.event_id, b.type, p, bodyKey(b), signature, compensates]);
+    publish('match.event_appended', { match_id: match.id, event_id: b.event_id, type: b.type, version: seq });
     return { status: 201, body: respond(ins.rows[0], seq) };
   });
 }

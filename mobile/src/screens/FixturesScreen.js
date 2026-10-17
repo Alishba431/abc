@@ -10,7 +10,7 @@ import { savedLabel, useCached } from '../useCached';
 const LEAGUE = 'league-alpha-1';
 
 export default function FixturesScreen({ navigation }) {
-  const q = useCached('fixtures:' + LEAGUE, `/api/v1/matches?league_id=${LEAGUE}`, { pollMs: 10000 });
+  const q = useCached('fixtures:' + LEAGUE, `/api/v1/matches?league_id=${LEAGUE}`, { pollMs: 10000, live: true });
   if (q.loading) return <Loading label="Loading fixtures…" />;
   const all = q.data || [];
   const live = all.filter((m) => m.status === 'in_progress');

@@ -19,7 +19,7 @@ export default function MatchScreen({ route, navigation }) {
   const { matchId } = route.params;
   const { user } = useAuth();
   const canScore = user.role === 'league_organizer' || user.role === 'super_admin';
-  const q = useCached('match:' + matchId, `/api/v1/matches/${matchId}`, { pollMs: 3000 });
+  const q = useCached('match:' + matchId, `/api/v1/matches/${matchId}`, { pollMs: 3000, live: matchId });
   if (q.loading) return <Loading label="Loading match…" />;
   if (!q.data) return <Message text={q.error} />;
   const m = q.data;

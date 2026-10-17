@@ -11,6 +11,7 @@ function redis() {
 }
 
 function publish(type, data) {
+  try { require('./realtime').broadcast(type, data); } catch (_) {}
   const r = redis();
   if (!r) return;
   r.xadd('domain-events', 'MAXLEN', '~', '10000', '*', 'type', type, 'data', JSON.stringify(data)).catch(() => {});

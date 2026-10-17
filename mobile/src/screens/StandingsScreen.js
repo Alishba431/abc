@@ -11,7 +11,7 @@ const QUAL_ICON = { clinched: '✓', eliminated: '✕', still_possible: '•' };
 const ZONE = { clinched: '#22C55E', still_possible: '#60A5FA', eliminated: '#64748B' };
 
 export default function StandingsScreen() {
-  const q = useCached('standings:' + LEAGUE, `/api/v1/standings/${LEAGUE}`, { pollMs: 15000 });
+  const q = useCached('standings:' + LEAGUE, `/api/v1/standings/${LEAGUE}`, { pollMs: 15000, live: true });
   if (q.loading) return <Loading label="Loading standings…" />;
   const s = q.data;
   return (
