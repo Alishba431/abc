@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../AuthContext';
 import { Button, Card, Loading, Message } from '../components/ui';
 import { money, STATUS_LABEL } from '../format';
@@ -53,10 +53,13 @@ export default function MatchScreen({ route, navigation }) {
       {m.pinned_product ? (
         <>
           <Text style={styles.h}>Featured in the store</Text>
-          <Card>
+          <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Image source={require('../../assets/jersey.png')} style={styles.thumb} accessibilityLabel="Jersey photo" />
+            <View style={{ flex: 1 }}>
             <Text style={styles.product}>{m.pinned_product.name}</Text>
             <Text style={styles.sub}>From {money(Math.min(...m.pinned_product.variants.map((v) => v.price_minor)))}</Text>
             <Button title="View in store" onPress={() => navigation.navigate('Main', { screen: 'Store' })} />
+            </View>
           </Card>
         </>
       ) : null}
@@ -79,4 +82,5 @@ const styles = StyleSheet.create({
   struck: { textDecorationLine: 'line-through', color: theme.muted },
   tag: { fontSize: 12, fontWeight: '700', color: theme.warning },
   product: { fontSize: theme.font.body, fontWeight: '700', color: theme.text },
+  thumb: { width: 88, height: 88, borderRadius: 12, marginRight: theme.space(1.5), backgroundColor: theme.primarySoft },
 });

@@ -41,11 +41,6 @@
         "projectId": "860a1e85-f95b-475a-8307-e0ee8f7d59dc"
       }
     },
-    "owner": "alishbar",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B1F4B"
-    }
+    "owner": "alishbar"
   }
 }

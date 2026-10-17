@@ -1,6 +1,6 @@
 // Catalogue → variant picker → cart → mock-gateway checkout → receipt (view + PDF download).
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api } from '../api';
 import { Button, Card, EmptyState, Field, Loading, Message } from '../components/ui';
 import { getServerUrl } from '../config';
@@ -91,7 +91,10 @@ export default function StoreScreen() {
       <Message kind={msg.kind} text={msg.text || q.error} />
       {products.length === 0 ? <EmptyState title="No products yet" hint="The club store has nothing for sale right now." /> : null}
       {products.map((p) => (
-        <Card key={p.product_id}>
+        <Card key={p.product_id} style={{ padding: 0, overflow: 'hidden' }}>
+          <Image source={require('../../assets/jersey.png')} style={styles.hero} resizeMode="cover"
+            accessibilityLabel={`${p.name} product photo`} />
+          <View style={{ padding: theme.space(2) }}>
           <Text style={styles.title}>{p.name}</Text>
           <Text style={styles.meta}>{p.description}</Text>
           <Text style={styles.price}>{money(p.variants[0].price_minor)}</Text>
@@ -106,6 +109,7 @@ export default function StoreScreen() {
             ))}
           </View>
           <Button title="Add to cart" onPress={add} />
+          </View>
         </Card>
       ))}
       <Text style={styles.h}>Cart</Text>
@@ -137,6 +141,7 @@ export default function StoreScreen() {
 
 const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '800', color: theme.text },
+  hero: { width: '100%', height: 220, backgroundColor: theme.primarySoft },
   meta: { fontSize: theme.font.small, color: theme.muted, marginVertical: 4 },
   price: { fontSize: 20, fontWeight: '800', color: theme.primary, marginVertical: 6 },
   label: { fontSize: theme.font.small, fontWeight: '600', color: theme.text, marginTop: theme.space(1) },
