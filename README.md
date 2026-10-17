@@ -1,4 +1,4 @@
-# NaSCon '26 — Multi-Sport League & Club Operations Platform
+# League Ops Platform — Multi-Sport League & Club Operations
 
 ## Run the backend
 ```bash

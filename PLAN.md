@@ -1,4 +1,4 @@
-# NaSCon '26 — Part I Build Plan (Node.js backend + React Native/Expo app)
+# League Ops Platform — Part I Build Plan (Node.js backend + React Native/Expo app)
 
 Hard deadlines (PKT): **every window needs ≥1 pushed commit** (−2 each missed) · questions to organizers **in writing before 13:00** · final push **before 15:05:00** (aim 14:50) · judging from 15:15.
 

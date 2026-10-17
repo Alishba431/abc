@@ -1,5 +1,5 @@
 {
-  "name": "nascon26-backend",
+  "name": "league-ops-backend",
   "version": "1.0.0",
   "private": true,
   "main": "src/server.js",
