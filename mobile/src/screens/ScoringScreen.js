@@ -81,6 +81,6 @@ const styles = StyleSheet.create({
   sub: { fontSize: theme.font.small, color: theme.muted, textAlign: 'center' },
   h: { fontSize: 18, fontWeight: '700', color: theme.text, marginTop: theme.space(2), marginBottom: theme.space(1) },
   row: { flexDirection: 'row' },
-  event: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEF0F4' },
+  event: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border },
   eventText: { flex: 1, fontSize: theme.font.body, color: theme.text, textTransform: 'capitalize' },
 });

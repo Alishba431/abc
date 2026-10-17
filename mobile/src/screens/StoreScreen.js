@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '800', color: theme.text },
   hero: { width: '100%', height: 220, backgroundColor: theme.primarySoft },
   meta: { fontSize: theme.font.small, color: theme.muted, marginVertical: 4 },
-  price: { fontSize: 20, fontWeight: '800', color: theme.primary, marginVertical: 6 },
+  price: { fontSize: 22, fontWeight: '900', color: theme.accent, marginVertical: 6 },
   label: { fontSize: theme.font.small, fontWeight: '600', color: theme.text, marginTop: theme.space(1) },
   row: { flexDirection: 'row' },
   h: { fontSize: 18, fontWeight: '700', color: theme.text, marginVertical: theme.space(1) },

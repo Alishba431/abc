@@ -4,7 +4,7 @@ import { theme } from '../theme';
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, accessibilityHint }) {
   const bg = variant === 'primary' ? theme.primary : variant === 'danger' ? theme.danger : variant === 'accent' ? theme.accent : theme.card;
-  const fg = variant === 'secondary' ? theme.primary : variant === 'accent' ? theme.navy : '#FFFFFF';
+  const fg = variant === 'secondary' ? theme.primaryText : variant === 'accent' ? theme.navy : '#FFFFFF';
   return (
     <Pressable
       accessibilityRole="button"
@@ -16,7 +16,7 @@ export function Button({ title, onPress, variant = 'primary', disabled, loading,
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: bg, opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
-        variant === 'secondary' && { borderWidth: 1, borderColor: theme.primary },
+        variant === 'secondary' && { borderWidth: 1, borderColor: theme.primaryText },
       ]}
     >
       {loading ? <ActivityIndicator color={fg} /> : <Text style={[styles.buttonText, { color: fg }]}>{title}</Text>}
@@ -39,7 +39,7 @@ export function Card({ children, style }) {
 
 export function Message({ kind = 'error', text }) {
   if (!text) return null;
-  const color = kind === 'error' ? theme.danger : kind === 'success' ? theme.success : theme.muted;
+  const color = kind === 'error' ? theme.dangerText : kind === 'success' ? theme.successText : theme.primaryText;
   const icon = kind === 'error' ? '⚠ ' : kind === 'success' ? '✓ ' : 'ℹ ';
   return (
     <Text accessibilityLiveRegion="polite" style={[styles.message, { color, borderLeftColor: color,
@@ -77,14 +77,14 @@ const styles = StyleSheet.create({
   label: { fontSize: theme.font.small, color: theme.text, fontWeight: '600', marginBottom: 4 },
   input: {
     minHeight: theme.touch, borderWidth: 1, borderColor: theme.border, borderRadius: theme.radius,
-    paddingHorizontal: theme.space(1.5), fontSize: theme.font.body, color: theme.text, backgroundColor: '#F8FAFC',
+    paddingHorizontal: theme.space(1.5), fontSize: theme.font.body, color: theme.text, backgroundColor: theme.cardAlt,
   },
   card: {
     backgroundColor: theme.card, borderRadius: theme.radius, padding: theme.space(2),
     marginBottom: theme.space(1.5), ...theme.shadow,
   },
   message: { fontSize: theme.font.small, borderLeftWidth: 4, borderRadius: 10, padding: theme.space(1.5), marginVertical: theme.space(1),
-    marginHorizontal: theme.space(2), backgroundColor: '#FFFFFF', overflow: 'hidden' },
+    marginHorizontal: 0, overflow: 'hidden' },
   empty: { alignItems: 'center', justifyContent: 'center', padding: theme.space(4) },
   emptyTitle: { fontSize: theme.font.body, fontWeight: '600', color: theme.text, textAlign: 'center' },
   emptyHint: { fontSize: theme.font.small, color: theme.muted, textAlign: 'center', marginTop: theme.space(1) },

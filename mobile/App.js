@@ -52,11 +52,11 @@ function MainTabs() {
     <View style={{ flex: 1 }}>
       <SyncBanner />
       <Tabs.Navigator screenOptions={{
-        tabBarActiveTintColor: theme.primary, tabBarInactiveTintColor: '#64748B',
-        tabBarStyle: { minHeight: 64, paddingTop: 6, paddingBottom: 8, borderTopWidth: 0, ...theme.shadow },
+        tabBarActiveTintColor: theme.accent, tabBarInactiveTintColor: '#7C8BA5',
+        tabBarStyle: { minHeight: 64, paddingTop: 6, paddingBottom: 8, borderTopWidth: 1, borderTopColor: theme.border, backgroundColor: theme.navy },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
         headerStyle: { backgroundColor: theme.navy }, headerTintColor: '#FFFFFF',
-        headerTitleStyle: { fontWeight: '800', fontSize: 20 }, headerShadowVisible: false,
+        headerTitleStyle: { fontWeight: '900', fontSize: 20, letterSpacing: 0.5 }, headerShadowVisible: false,
         sceneStyle: { backgroundColor: theme.bg },
       }}>
         {tabsFor(user.role).map((t) => (
