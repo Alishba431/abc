@@ -16,7 +16,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.leagueops.app"
+      "package": "com.leagueops.app",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -24,7 +25,22 @@
     "plugins": [
       "expo-secure-store",
       "expo-sqlite",
-      "expo-status-bar"
-    ]
+      "expo-status-bar",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "minSdkVersion": 29
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "860a1e85-f95b-475a-8307-e0ee8f7d59dc"
+      }
+    },
+    "owner": "alishbar"
   }
 }
