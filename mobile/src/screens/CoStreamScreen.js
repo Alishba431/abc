@@ -8,6 +8,7 @@ import LivePill from '../components/LivePill';
 import TeamBadge from '../components/TeamBadge';
 import { Button, Loading, Message } from '../components/ui';
 import { getServerUrl } from '../config';
+import { loadSession } from '../session';
 import { theme } from '../theme';
 import { subscribe } from '../ws';
 
@@ -68,6 +69,21 @@ export default function CoStreamScreen({ route, navigation }) {
     });
     return () => { offChat(); offBus(); };
   }, [sessionId]);
+
+  // Broadcasters hold a presence socket: if this phone drops off, the server hands hosting to the next participant.
+  const broadcasting = !!user && !!session && session.status === 'active' && session.active_participants.includes(user.player_id);
+  useEffect(() => {
+    if (!broadcasting) return undefined;
+    let off = () => {};
+    let cancelled = false;
+    loadSession().then((s) => {
+      if (cancelled || !s) return;
+      off = subscribe(`/ws/costream/${sessionId}?access_token=${encodeURIComponent(s.token)}`, (msg) => {
+        if (msg.type === 'costream.session_updated') load();
+      });
+    });
+    return () => { cancelled = true; off(); };
+  }, [broadcasting, sessionId]);
 
   // Opened from an invite link (nascon://stream/{id}?invite=…): join as a broadcaster.
   useEffect(() => {

@@ -3,10 +3,10 @@
   "active_streams_while_live": 1,
   "bitrate_kbps_while_live": 396.0,
   "revoke_status": 200,
-  "ingest_cut_seconds": 0.153,
+  "ingest_cut_seconds": 0.149,
   "revoked_key_republish_refused": true,
   "vod_indexed_seconds_after_end": 2.8,
   "vod_playback_status": 200,
-  "vod_duration_seconds": 4.61,
+  "vod_duration_seconds": 4.62,
   "pass": true
 }
