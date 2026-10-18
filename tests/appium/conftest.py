@@ -25,6 +25,9 @@ def _caps():
         "appium:noReset": True,
         "appium:autoGrantPermissions": True,
         "appium:newCommandTimeout": 180,
+        "appium:androidInstallTimeout": 180000,
+        "appium:skipDeviceInitialization": True,
+        "appium:uiautomator2ServerInstallTimeout": 120000,
     }
     if os.environ.get("ANDROID_SERIAL"):
         caps["appium:udid"] = os.environ["ANDROID_SERIAL"]
