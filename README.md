@@ -37,7 +37,7 @@ For phones on the LAN set `MEDIA_PUBLIC_HOST=<laptop-LAN-IP>` (stream URLs) and 
 python3 tests/contract_probes.py    # live /audit/v1 contract probes (stack up, same DAY2_SALT in the env)
 ./tests/run_selenium.sh             # Grid suite, pytest -n 3 → tests/reports/selenium-report.xml
 QA_PYTHON=~/venv/bin/python ./tests/run_selenium.sh   # same, from a host venv instead of the QA image
-docker run --rm --network host -v "$PWD/tests":/tests grafana/k6:0.54.0 run \
+docker run --rm --user "$(id -u):$(id -g)" --network host -v "$PWD/tests":/tests grafana/k6:0.54.0 run \
   --summary-export=/tests/reports/k6-summary.json /tests/k6_load.js
 ```
 Appium (phone with USB debugging, League Ops APK installed, its Server setting pointing at this laptop):

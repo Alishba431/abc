@@ -40,7 +40,7 @@ Backend
       live score via WebSocket, guest cart, blocked chat → progressive auth modal → login → cart merge → back to timestamp,
       WCAG 2.1 AA (contrast, keyboard, ARIA, 48 px targets)
 - [x] `tests/selenium/test_guest_grid.py` (3 spec tests + WCAG DOM test, `pytest -n 3`, JUnit → `tests/reports/selenium-report.xml`)
-- [x] `tests/k6_load.js` (exact profile) → `tests/reports/k6-summary.json`; QR state cached in memory for 550 VUs (local: 0% errors, p95 7.8 ms)
+- [x] `tests/k6_load.js` (exact profile) → `tests/reports/k6-summary.json`; QR state cached in memory for 550 VUs (local: 0% errors over 69,370 requests, p95 22.2 ms)
 - [x] `.github/workflows/autograde.yml` (compose up, contract probes, grid ≥ 3 nodes, Selenium, k6, unit tests)
 - [x] Mobile: `nascon://` scheme + deep links (entity/match, stream/cs-session) opening screens **without login wall**,
       QR scanner, co-stream view + chat, Go-Live screen (stream key / RTMP for OBS·Larix), live notifications

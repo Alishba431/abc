@@ -48,7 +48,7 @@ jobs:
       - name: k6 load profile (500 guest viewers + 50 chat posters, 15 s)
         run: |
           curl -s -X POST http://localhost:8080/audit/v1/reset > /dev/null
-          docker run --rm --network host -v "$PWD/tests":/tests grafana/k6:0.54.0 run \
+          docker run --rm --user "$(id -u):$(id -g)" --network host -v "$PWD/tests":/tests grafana/k6:0.54.0 run \
             --summary-export=/tests/reports/k6-summary.json /tests/k6_load.js
 
       - name: Unit tests (Phase I regression + Phase II modules) with coverage
