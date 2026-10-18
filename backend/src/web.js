@@ -162,6 +162,9 @@ r.get('/matches/:id/:view', wrap(async (req, res) => {
   res.send(page({ title, body, data }));
 }));
 
+const costreamLabel = (s) => (s.status === 'active'
+  ? `● LIVE CO-STREAM · ${s.participant_count} BROADCASTERS · HOST ${s.active_host.replace('player-', '').toUpperCase()}` : 'CO-STREAM ENDED');
+
 r.get('/costream/:id', wrap(async (req, res) => {
   const session = await getSession(req.params.id);
   if (!session) return notFound(res, 'co-stream');
@@ -175,7 +178,7 @@ r.get('/costream/:id', wrap(async (req, res) => {
     participants: session.active_participants, active_host: session.active_host };
   const label = `Co-stream ${session.session_id} · ${session.layout.replace('_', ' ')} · host ${session.active_host || 'none'}`;
   res.send(page({ title: `Co-stream ${session.session_id}`, data,
-    body: livePlayer({ home, away, statusLabel: session.status === 'active' ? `● LIVE CO-STREAM · ${session.participant_count} BROADCASTERS` : 'CO-STREAM ENDED', room: data.room, label }) }));
+    body: livePlayer({ home, away, statusLabel: costreamLabel(session), room: data.room, label }) }));
 }));
 
 r.get('/players/:id', wrap(async (req, res) => {

@@ -66,6 +66,21 @@
     });
   }
 
+  // ---------- co-stream: host handoffs and joins show up live ----------
+  if (P.view === 'costream' && P.session_id) {
+    connect('/ws/costream/' + encodeURIComponent(P.session_id), function (msg) {
+      if (msg.type !== 'costream.session_updated') return;
+      api('/api/v1/public/costream/' + encodeURIComponent(P.session_id)).then(function (r) {
+        var k = document.querySelector('.hero .kicker');
+        if (!r.ok || !k) return;
+        var s = r.data;
+        k.textContent = s.status === 'active'
+          ? '● LIVE CO-STREAM · ' + s.participant_count + ' BROADCASTERS · HOST ' + s.active_host.replace('player-', '').toUpperCase()
+          : 'CO-STREAM ENDED';
+      });
+    });
+  }
+
   // ---------- video (HLS from the self-hosted media server) ----------
   var video = $('video');
   function startVideo() {
