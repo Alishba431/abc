@@ -31,4 +31,9 @@ async function kickPath(name) {
   return true;
 }
 
-module.exports = { healthy, listPaths, kickPath };
+// Generic control-API call (used to switch recording / playback on at runtime).
+function call(path, method = 'GET', body) {
+  return api(path, body === undefined ? { method } : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+
+module.exports = { healthy, listPaths, kickPath, call };

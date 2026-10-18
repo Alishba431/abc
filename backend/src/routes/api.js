@@ -89,6 +89,12 @@ r.get('/public/costream/:id', wrap(async (req, res) => {
   if (!s) throw err(404, 'STREAM_NOT_FOUND', 'That co-stream does not exist.', { session_id: req.params.id });
   res.json(s);
 }));
+// Recorded streams (FR-3.2 VOD archive), streamed out of MinIO.
+r.get('/public/vods/:id', wrap(async (req, res) => {
+  const body = await require('../domain/vod').readVod(req.params.id);
+  if (!body) throw err(404, 'STREAM_NOT_FOUND', 'That recording does not exist.', { vod_id: req.params.id });
+  res.set('Content-Type', 'video/mp4').send(body);
+}));
 r.get('/public/chat/:room', wrap(async (req, res) => res.json({ chat_room_id: req.params.room, messages: await moderation.history(req.params.room) })));
 // SSE alternative to the per-match WebSocket (NFR-1).
 r.get('/matches/:id/stream', (req, res) => realtime.sse(req, res, { matchId: req.params.id }));
@@ -253,7 +259,7 @@ async function athleteProfile(id, viewer) {
     club: { club_id: row.club_id, name: club ? club.data.name : row.club_id }, career, upcoming, followers, following,
     can_edit: viewer.role === 'super_admin' || viewer.player_id === id
       || (viewer.role === 'club_manager' && (viewer.club_ids || []).includes(row.club_id)),
-    vods: [],
+    vods: await require('../domain/vod').listVods(id),
   };
 }
 

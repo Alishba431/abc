@@ -28,6 +28,13 @@ async function streamPathFor(clubIds) {
   return s.rowCount ? `live/${s.rows[0].stream_key}` : null;
 }
 
+// Latest recorded stream (VOD) by an athlete of either club, for the replay page.
+async function replayFor(clubIds) {
+  const v = await pool.query(`SELECT v.vod_id FROM vods v JOIN club_players cp ON cp.id = v.player_id
+    WHERE cp.club_id = ANY($1) ORDER BY v.started_at DESC LIMIT 1`, [clubIds]);
+  return v.rowCount ? `/api/v1/public/vods/${v.rows[0].vod_id}` : null;
+}
+
 const crest = (id, name) => `<span class="crest" style="background:${crestColor(id)}" aria-hidden="true">${esc(initials(name))}</span>`;
 
 function page({ title, body, data }) {
@@ -143,11 +150,14 @@ r.get('/matches/:id/:view', wrap(async (req, res) => {
       <p>This match has been ${esc(state)}. We'll update this page automatically when there's news.</p>${openInApp(s.match_id)}</section>`;
   } else {
     const label = req.params.view === 'vod' ? 'FULL TIME · REPLAY' : 'COMING UP';
+    const replay = req.params.view === 'vod' ? await replayFor([home.id, away.id]) : null;
     body = `<section class="hero"><p class="kicker">${label}</p><div class="teams">
       <div class="team">${crest(home.id, home.name)}<span>${esc(home.name)}</span></div>
       <span class="score" id="score" role="status" aria-label="Score">${req.params.view === 'vod' ? `${home.score} - ${away.score}` : 'vs'}</span>
       <div class="team">${crest(away.id, away.name)}<span>${esc(away.name)}</span></div></div></section>
-      <section class="card notice"><p>${req.params.view === 'vod' ? 'The replay will appear here once it has been processed.' : 'The live stream starts at kick-off. Keep this page open — it switches to live automatically.'}</p>${openInApp(s.match_id)}</section>`;
+      ${replay ? `<section aria-label="Replay"><div class="video" data-testid="guest-video-player">
+        <video controls playsinline preload="metadata" src="${esc(replay)}" aria-label="Match replay video"></video></div></section>` : ''}
+      <section class="card notice"><p>${req.params.view === 'vod' ? (replay ? 'Recorded live by the clubs’ athletes.' : 'The replay will appear here once it has been processed.') : 'The live stream starts at kick-off. Keep this page open — it switches to live automatically.'}</p>${openInApp(s.match_id)}</section>`;
   }
   res.send(page({ title, body, data }));
 }));

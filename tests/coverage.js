@@ -13,7 +13,7 @@ const AREAS = {
 
 // Part II (Section 7.2): the five Phase II backend modules.
 const AREAS_DAY2 = {
-  streaming: ['domain/streaming.js', 'media.js'],
+  streaming: ['domain/streaming.js', 'media.js', 'domain/vod.js'],
   costream: ['domain/costream.js'],
   qr_guest: ['domain/qr.js', 'domain/guest.js'],
   moderation_dlq: ['domain/moderation.js', 'domain/dlq.js'],

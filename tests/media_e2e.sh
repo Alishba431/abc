@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # FR-3.2 end to end against the live stack (needs ffmpeg): signed stream key -> RTMP ingest into MediaMTX -> HLS
-# playback -> /metrics -> revoke cuts the live publisher (< 2 s) -> the revoked key can no longer publish.
+# playback -> /metrics -> revoke cuts the live publisher (< 2 s) -> the revoked key can no longer publish ->
+# the recording lands in MinIO and is indexed as a VOD on the athlete profile.
 # Writes tests/reports/media-e2e.json.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -12,6 +13,7 @@ mkdir -p tests/reports
 json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
 key_req() { curl -s -X POST "$API/audit/v1/stream/key" -H 'Content-Type: application/json' -d "$1"; }
 
+STARTED="$(date -u +%Y-%m-%dT%H:%M:%S)"
 KEY_JSON="$(key_req '{"action":"generate","player_id":"player-alpha-1","label":"media-e2e"}')"
 KEY="$(echo "$KEY_JSON" | json "d['stream_key']")"
 RTMP="$(echo "$KEY_JSON" | json "d['ingest_endpoints']['rtmp']")"
@@ -42,14 +44,31 @@ REPUBLISH_REFUSED=false
 timeout 8 ffmpeg -hide_banner -loglevel error -re -f lavfi -i testsrc=size=320x240:rate=15 -t 4 -c:v libx264 \
   -preset ultrafast -f flv "$RTMP" >"$TMP/again.log" 2>&1 || REPUBLISH_REFUSED=true
 
-python3 - "$HLS_STATUS" "$STREAMS" "$KBPS" "$REVOKE_STATUS" "$CUT" "$REPUBLISH_REFUSED" <<'EOF' | tee tests/reports/media-e2e.json
+# The ended stream is recorded to MinIO and indexed on the athlete profile (VOD archive).
+TOKEN="$(curl -s -X POST "$API/api/v1/auth/login" -H 'Content-Type: application/json' \
+  -d '{"email":"admin@nascon.test","password":"Nascon@26"}' | json "d['token']")"
+VOD_URL=""; VOD_AFTER=None
+for i in $(seq 1 30); do
+  VOD_URL="$(curl -s "$API/api/v1/athletes/player-alpha-1" -H "Authorization: Bearer $TOKEN" \
+    | json "next((v['playback_url'] for v in d['vods'] if v['started_at'][:19] >= '$STARTED'), '')" 2>/dev/null)"
+  [ -n "$VOD_URL" ] && { VOD_AFTER="$(python3 -c "import time; print(round(time.time() - $T0, 1))")"; break; }
+  sleep 1
+done
+VOD_STATUS=000
+[ -n "$VOD_URL" ] && VOD_STATUS="$(curl -s -o "$TMP/vod.mp4" -w '%{http_code}' "$API$VOD_URL")"
+VOD_SECONDS="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$TMP/vod.mp4" 2>/dev/null || echo 0)"
+
+python3 - "$HLS_STATUS" "$STREAMS" "$KBPS" "$REVOKE_STATUS" "$CUT" "$REPUBLISH_REFUSED" "$VOD_STATUS" "${VOD_SECONDS:-0}" "$VOD_AFTER" <<'EOF' | tee tests/reports/media-e2e.json
 import json, sys
-hls, streams, kbps, revoke, cut, refused = sys.argv[1:]
+hls, streams, kbps, revoke, cut, refused, vod_status, vod_seconds, vod_after = sys.argv[1:]
 r = {"hls_manifest_status": int(hls), "active_streams_while_live": int(float(streams or 0)),
      "bitrate_kbps_while_live": float(kbps or 0), "revoke_status": int(revoke),
-     "ingest_cut_seconds": None if cut == "None" else float(cut), "revoked_key_republish_refused": refused == "true"}
+     "ingest_cut_seconds": None if cut == "None" else float(cut), "revoked_key_republish_refused": refused == "true",
+     "vod_indexed_seconds_after_end": None if vod_after == "None" else float(vod_after),
+     "vod_playback_status": int(vod_status), "vod_duration_seconds": round(float(vod_seconds or 0), 2)}
 r["pass"] = (r["hls_manifest_status"] == 200 and r["active_streams_while_live"] >= 1 and r["revoke_status"] == 200
-             and r["ingest_cut_seconds"] is not None and r["ingest_cut_seconds"] < 2.0 and r["revoked_key_republish_refused"])
+             and r["ingest_cut_seconds"] is not None and r["ingest_cut_seconds"] < 2.0 and r["revoked_key_republish_refused"]
+             and r["vod_playback_status"] == 200 and r["vod_duration_seconds"] > 0)
 print(json.dumps(r, indent=2))
 sys.exit(0 if r["pass"] else 1)
 EOF

@@ -47,11 +47,13 @@ CREATE TABLE IF NOT EXISTS chat_messages (room_id TEXT NOT NULL, seq INT NOT NUL
 CREATE TABLE IF NOT EXISTS dlq (n SERIAL PRIMARY KEY, event JSONB NOT NULL, attempts INT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS follows (follower_id TEXT NOT NULL, athlete_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (follower_id, athlete_id));
+CREATE TABLE IF NOT EXISTS vods (vod_id TEXT PRIMARY KEY, player_id TEXT NOT NULL, stream_key TEXT NOT NULL, object_key TEXT NOT NULL,
+  bytes INT NOT NULL, duration_s DOUBLE PRECISION NOT NULL, started_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 `;
 
 const WIPE = `TRUNCATE meta, tenants, leagues_rbac, clubs, club_players, users, sports, leagues, matches, events,
   roster_leagues, squads, players, audit, roster_requests, products, variants, discount_codes, orders, offline_actions,
-  stream_keys, costream_sessions, qr_codes, qr_scans, guest_tokens, guest_carts, carts, chat_rooms, chat_messages, dlq, follows
+  stream_keys, costream_sessions, qr_codes, qr_scans, guest_tokens, guest_carts, carts, chat_rooms, chat_messages, dlq, follows, vods
   RESTART IDENTITY`;
 
 async function waitForDb(tries = 60) {

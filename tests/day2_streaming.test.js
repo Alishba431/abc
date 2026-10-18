@@ -109,3 +109,74 @@ test('media auth hook and metrics exposition', async () => {
   metrics.startSampler();
   assert.strictEqual((await h.call('GET', '/health')).body.status, 'ok');
 });
+
+test('FR-3.2 recording: an ended live stream is pulled from MediaMTX playback, stored in MinIO and indexed as a VOD', async () => {
+  const http = require('http');
+  const cfg = { playback: false, record: false };
+  const patches = [];
+  const objects = {};
+  let s3Up = true;
+  const read = (req) => new Promise((r) => { const c = []; req.on('data', (d) => c.push(d)); req.on('end', () => r(Buffer.concat(c))); });
+  const mtx = http.createServer(async (req, res) => {
+    const body = await read(req);
+    if (req.url === '/v3/config/global/get') return res.end(JSON.stringify({ playback: cfg.playback }));
+    if (req.url === '/v3/config/pathdefaults/get') return res.end(JSON.stringify({ record: cfg.record }));
+    if (req.method === 'PATCH') { patches.push(req.url); Object.assign(cfg, JSON.parse(body)); return res.end(); }
+    if (req.url.startsWith('/list?path=live%2F')) return res.end(JSON.stringify([{ start: '2026-10-18T07:50:00Z', duration: 4.2 }]));
+    if (req.url.startsWith('/get?')) return res.end('fake-mp4-bytes');
+    res.writeHead(404); return res.end();
+  });
+  const s3 = http.createServer(async (req, res) => {
+    const body = await read(req);
+    const auth = req.headers.authorization || '';
+    if (!s3Up || !/^AWS4-HMAC-SHA256 Credential=nascon\/\d{8}\/us-east-1\/s3\/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=[0-9a-f]{64}$/.test(auth)) {
+      res.writeHead(403); return res.end();
+    }
+    if (req.method === 'PUT') {
+      assert.strictEqual(req.headers['x-amz-content-sha256'], crypto.createHash('sha256').update(body).digest('hex'));
+      objects[req.url] = body; return res.end();
+    }
+    if (objects[req.url]) return res.end(objects[req.url]);
+    res.writeHead(404); return res.end();
+  });
+  await new Promise((r) => mtx.listen(0, r));
+  await new Promise((r) => s3.listen(0, r));
+  Object.assign(process.env, { MEDIA_API_URL: `http://127.0.0.1:${mtx.address().port}`, MEDIA_PLAYBACK_URL: `http://127.0.0.1:${mtx.address().port}`,
+    MINIO_ENDPOINT: `http://127.0.0.1:${s3.address().port}`, MINIO_ROOT_USER: 'nascon', MINIO_ROOT_PASSWORD: 'test-secret', VOD_SETTLE_MS: '5' });
+  const vod = require(h.src + '/domain/vod');
+  vod._reset();
+  try {
+    const k = (await key({ action: 'generate', player_id: 'player-alpha-1' })).body.stream_key;
+    assert.deepStrictEqual(await vod.onPaths([{ name: `live/${k}`, ready: true }, { name: 'costream/x', ready: true }]), []);
+    assert.deepStrictEqual(patches, ['/v3/config/global/patch', '/v3/config/pathdefaults/patch']);
+    const [[vodId]] = await vod.onPaths([]); // the stream stopped publishing
+    assert.match(vodId, /^vod-[0-9a-f]{12}$/);
+    assert.deepStrictEqual(Object.keys(objects), [`/recordings/vod/${k}/${vodId}.mp4`]);
+    assert.deepStrictEqual(await vod.finalize(`live/${k}`, { settleMs: 0 }), []); // already indexed: idempotent
+    assert.deepStrictEqual(await vod.finalize('live/not-a-key', { settleMs: 0 }), []);
+
+    const admin = (await h.call('POST', '/api/v1/auth/login', { email: 'admin@nascon.test', password: 'Nascon@26' })).body.token;
+    const profile = (await h.call('GET', '/api/v1/athletes/player-alpha-1', undefined, admin)).body;
+    assert.deepStrictEqual(profile.vods.map((v) => [v.vod_id, v.duration_s, v.bytes, v.playback_url]),
+      [[vodId, 4.2, 14, `/api/v1/public/vods/${vodId}`]]);
+    const play = await h.rawCall('GET', `/api/v1/public/vods/${vodId}`);
+    assert.deepStrictEqual([play.status, play.headers.get('content-type'), await play.text()], [200, 'video/mp4', 'fake-mp4-bytes']);
+    assert.strictEqual((await h.call('GET', '/api/v1/public/vods/vod-nope')).body.error.code, 'STREAM_NOT_FOUND');
+
+    // Object store down: the finalize failure is logged and never escapes the sampler.
+    s3Up = false;
+    const k2 = (await key({ action: 'generate', player_id: 'player-alpha-2' })).body.stream_key;
+    await vod.onPaths([{ name: `live/${k2}`, ready: true }]);
+    assert.deepStrictEqual(await vod.onPaths([]), [[]]);
+    assert.strictEqual((await h.rawCall('GET', `/api/v1/public/vods/${vodId}`)).status, 500);
+    // Already-enabled media server is left untouched.
+    vod._reset();
+    await vod.enableRecording();
+    assert.strictEqual(patches.length, 2);
+  } finally {
+    for (const v of ['MEDIA_API_URL', 'MEDIA_PLAYBACK_URL', 'MINIO_ENDPOINT', 'MINIO_ROOT_USER', 'MINIO_ROOT_PASSWORD', 'VOD_SETTLE_MS']) delete process.env[v];
+    vod._reset();
+    mtx.close();
+    s3.close();
+  }
+});

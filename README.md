@@ -17,7 +17,9 @@ For phones on the LAN set `MEDIA_PUBLIC_HOST=<laptop-LAN-IP>` (stream URLs) and 
 | Guest Web Player (no login) | http://localhost:8080/web/matches/match-m1/live · co-stream: `/web/costream/cs-session-101` |
 | Dynamic QR short link | http://localhost:8080/q/m1-live → 302 to the state route · exports `/audit/v1/qr/match-m1/export.{svg,png,pdf}` |
 | Go live from OBS / Larix | app → Me → Go live (or `POST /audit/v1/stream/key`), then `rtmp://<host>:1935/live/<stream_key>`; watch `http://<host>:8888/live/<stream_key>/index.m3u8` |
+| Replays (VOD) | every ended stream is recorded to MinIO and listed on the athlete profile; replay page `/web/matches/{id}/vod` |
 | Metrics | http://localhost:8080/metrics (Prometheus text) |
+| Media end to end | `./tests/media_e2e.sh` (needs ffmpeg) → `tests/reports/media-e2e.json` |
 | Native deep links | `adb shell am start -W -a android.intent.action.VIEW -d "nascon://entity/match-m1"` · `nascon://stream/cs-session-101` |
 
 ## Demo accounts (password `Nascon@26` for all)
@@ -55,7 +57,8 @@ tests on every push to `main`, with fresh salts per run.
 - MinIO runs from `bitnamilegacy/minio` because `minio/minio` is no longer on Docker Hub (ADR-9); receipts stay in Postgres.
 
 ## Mobile
-Expo / React Native app in `mobile/`; release build at `mobile/release/app-release.apk`.
+Expo / React Native app in `mobile/`. Latest APK: GitHub Releases (published by `.github/workflows/attach-apk.yml`
+from the EAS URL in `mobile/release/apk-url.txt`); the Day 1 build is still at `mobile/release/app-release.apk`.
 Set the server address in the app's Settings screen (phone: `http://<laptop-LAN-IP>:8080`).
 Guests can watch live matches, scan QR codes and open `nascon://` links without signing in; chat, follow and
 checkout ask for sign-in. Build: `cd mobile && EAS_NO_VCS=1 eas build -p android --profile preview` (the root

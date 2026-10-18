@@ -1,9 +1,11 @@
-# Downloads the APK that EAS built (URL in mobile/release/apk-url.txt) and commits it as the release APK.
+# Downloads the APK that EAS built (URL in mobile/release/apk-url.txt) and publishes it as a GitHub release asset.
+# Nothing is committed back to main, so pushes from slow networks never need to pull a 60 MB binary first.
 name: Attach release APK
 on:
   push:
     branches: [main]
     paths: ['mobile/release/apk-url.txt']
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -14,13 +16,13 @@ jobs:
       - name: Download APK built by EAS
         run: |
           url="$(tr -d '[:space:]' < mobile/release/apk-url.txt)"
-          curl -fsSL --retry 3 -A "Mozilla/5.0" -o mobile/release/app-release.apk "$url"
-          ls -la mobile/release/
-          python3 -c "import zipfile; z=zipfile.ZipFile('mobile/release/app-release.apk'); assert 'AndroidManifest.xml' in z.namelist(); print('valid apk')"
-      - name: Commit APK
+          curl -fsSL --retry 3 -A "Mozilla/5.0" -o league-ops.apk "$url"
+          ls -la league-ops.apk
+          python3 -c "import zipfile; z=zipfile.ZipFile('league-ops.apk'); assert 'AndroidManifest.xml' in z.namelist(); print('valid apk')"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add mobile/release/app-release.apk
-          git commit -m "Release APK: $(tr -d '[:space:]' < mobile/release/apk-url.txt)" || echo "no change"
-          git push
+          tag="apk-$(date -u +%Y%m%d-%H%M%S)"
+          gh release create "$tag" league-ops.apk --target "$GITHUB_SHA" --title "League Ops APK $tag" \
+            --notes "Built by EAS: $(tr -d '[:space:]' < mobile/release/apk-url.txt)" --latest

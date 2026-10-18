@@ -7,7 +7,9 @@ const stats = { active: 0, kbps: 0, lastBytes: null, lastAt: 0 };
 
 async function sampleMedia() {
   try {
-    const ready = (await media.listPaths()).filter((p) => p.ready);
+    const items = await media.listPaths();
+    const ready = items.filter((p) => p.ready);
+    require('./domain/vod').onPaths(items).catch(() => {});
     const bytes = ready.reduce((sum, p) => sum + (p.bytesReceived || 0), 0);
     const now = Date.now();
     if (stats.lastBytes !== null && now > stats.lastAt) {
