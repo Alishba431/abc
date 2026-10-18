@@ -23,24 +23,24 @@ Backend
 - [x] `GET /metrics` (5 Prometheus metrics, `text/plain; version=0.0.4`)
 
 ## Window 2 — 11:30–12:45 (push ~12:05 and ~12:40)
-- [ ] QR engine: `GET /audit/v1/qr/{id}` (+`?inspect=true`), state-driven `target_route`, DAY2 signature, scan telemetry
+- [x] QR engine: `GET /audit/v1/qr/{id}` (+`?inspect=true`), state-driven `target_route`, DAY2 signature, scan telemetry
       (count, mobile/desktop, UTC bucket, **no IP / UA stored**), `GET /q/{code}` → 302, exports `.svg` / `.png` / `.pdf`
-- [ ] Match states postponed / cancelled / abandoned (needed for QR notice routes)
-- [ ] Guest boundary: issue `guest_anon_tok_*`; any write with a guest token → **403 GUEST_WRITE_FORBIDDEN**
+- [x] Match states postponed / cancelled / abandoned (needed for QR notice routes)
+- [x] Guest boundary: issue `guest_anon_tok_*`; any write with a guest token → **403 GUEST_WRITE_FORBIDDEN**
       (`/api/v1/chat`, `/audit/v1/checkout`, `/audit/v1/events`, roster, follow); guest cart staging allowed
-- [ ] `POST /audit/v1/guest/cart-merge` (validation order, stock 409, idempotent replay, GUEST_TOKEN_ALREADY_MERGED)
-- [ ] Moderation: leetspeak normalisation + dictionary masking `***`, flood drop → muted, kick dedupe under 10 parallel
+- [x] `POST /audit/v1/guest/cart-merge` (validation order, stock 409, idempotent replay, GUEST_TOKEN_ALREADY_MERGED)
+- [x] Moderation: leetspeak normalisation + dictionary masking `***`, flood drop → muted, kick dedupe under 10 parallel
       calls, DLQ with 3 bounded retries; `POST /audit/v1/moderation/test`; member chat `POST /api/v1/chat`
-- [ ] Realtime: `ws://…/ws/matches/{id}` per-match push with score (p95 < 500 ms) + SSE `/api/v1/matches/{id}/stream`
-- [ ] `DELETE /audit/v1/privacy/user/{id}`
-- [ ] Unit tests per Phase II module → `COVERAGE_DAY2.json` (streaming, costream, qr_guest, moderation_dlq, observability ≥ 85%)
+- [x] Realtime: `ws://…/ws/matches/{id}` per-match push with score (p95 < 500 ms) + SSE `/api/v1/matches/{id}/stream`
+- [x] `DELETE /audit/v1/privacy/user/{id}`
+- [x] Unit tests per Phase II module → `COVERAGE_DAY2.json` (streaming, costream, qr_guest, moderation_dlq, observability ≥ 85%)
 
 ## Window 3 — 12:45–13:45 (push ~13:30)
 - [ ] Guest Web Player `/web/*` (live / preview / vod / notice / players / clubs / costream) with all 9 `data-testid`s,
       live score via WebSocket, guest cart, blocked chat → progressive auth modal → login → cart merge → back to timestamp,
       WCAG 2.1 AA (contrast, keyboard, ARIA, 48 px targets)
 - [ ] `tests/selenium/test_guest_grid.py` (3 tests, `pytest -n 3`, JUnit → `tests/reports/selenium-report.xml`)
-- [ ] `tests/k6_load.js` (exact profile) → `tests/reports/k6-summary.json`; QR state cached in memory for 550 VUs
+- [x] `tests/k6_load.js` (exact profile) → `tests/reports/k6-summary.json`; QR state cached in memory for 550 VUs (local: 0% errors, p95 7.8 ms)
 - [ ] `.github/workflows/autograde.yml` (compose up, contract probes, grid ≥ 3 nodes, k6 smoke)
 - [ ] Mobile: `nascon://` scheme + deep links (entity/match, stream/cs-session) opening screens **without login wall**,
       QR scanner, co-stream view + chat, Go-Live screen (stream key / RTMP for OBS·Larix), live notifications

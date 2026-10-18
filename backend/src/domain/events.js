@@ -4,10 +4,15 @@ const { err, validation } = require('../errors');
 const { canonical, sign } = require('../sign');
 const { withLock } = require('../util');
 const { Checker, isObj, isId, isInt, isStr } = require('../validate');
-const { project, scoreLimitError } = require('./scoring');
+const { project, scoreLimitError, statusTarget, STATUS_EVENTS, STATUS_VALUES } = require('./scoring');
+const cache = require('../cache');
 const { publish } = require('../queue');
 
-const TYPES = ['match_init', 'match_start', 'score', 'discipline', 'tiebreak_winner', 'match_end', 'compensation'];
+const TYPES = ['match_init', 'match_start', 'score', 'discipline', 'tiebreak_winner', 'match_end', 'compensation',
+  'match_status', ...Object.keys(STATUS_EVENTS)];
+// Allowed source states for each lifecycle target (FR-1.3).
+const FROM = { postponed: ['upcoming', 'in_progress'], cancelled: ['upcoming', 'postponed'],
+  abandoned: ['in_progress', 'postponed'], upcoming: ['postponed'] };
 const COMPENSABLE = ['score', 'discipline', 'tiebreak_winner'];
 
 function validateEvent(b) {
@@ -35,6 +40,9 @@ function validateEvent(b) {
         break;
       case 'tiebreak_winner':
         c.check(isId(p.team_id), 'payload.team_id');
+        break;
+      case 'match_status':
+        c.check(STATUS_VALUES.includes(p.status), 'payload.status');
         break;
       case 'compensation':
         c.check(isId(p.compensates), 'payload.compensates');
@@ -107,7 +115,9 @@ async function appendEvent(b) {
     let compensates = null;
     switch (b.type) {
       case 'match_start':
-        if (proj.status !== 'upcoming') throw err(409, 'ILLEGAL_TRANSITION', `Cannot start a match that is ${proj.status}.`, { from: proj.status, to: 'in_progress' });
+        if (proj.status !== 'upcoming' && proj.status !== 'postponed') {
+          throw err(409, 'ILLEGAL_TRANSITION', `Cannot start a match that is ${proj.status}.`, { from: proj.status, to: 'in_progress' });
+        }
         break;
       case 'score':
         teamCheck();
@@ -141,7 +151,12 @@ async function appendEvent(b) {
         compensates = target.event_id;
         break;
       }
-      default:
+      default: {
+        const to = statusTarget(b);
+        if (to && !FROM[to].includes(proj.status)) {
+          throw err(409, 'ILLEGAL_TRANSITION', `Cannot move a match from ${proj.status} to ${to}.`, { from: proj.status, to });
+        }
+      }
     }
 
     const seq = events.length + 1;
@@ -150,7 +165,12 @@ async function appendEvent(b) {
       `INSERT INTO events(match_id, seq, event_id, type, payload, body_key, signature, compensates)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
       [match.id, seq, b.event_id, b.type, p, bodyKey(b), signature, compensates]);
-    publish('match.event_appended', { match_id: match.id, event_id: b.event_id, type: b.type, version: seq });
+    const after = project(sport, match, [...events, ins.rows[0]]);
+    cache.invalidate(match.id);
+    publish('match.event_appended', {
+      match_id: match.id, event_id: b.event_id, type: b.type, version: seq, status: after.status,
+      score: { home: after.home.score, away: after.away.score }, home_team_id: match.home, away_team_id: match.away,
+    });
     return { status: 201, body: respond(ins.rows[0], seq) };
   });
 }

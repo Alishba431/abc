@@ -22,18 +22,21 @@ async function start(name) {
   const { pool } = require(path.join(src, 'db'));
   await bootstrap();
   const server = await new Promise((r) => { const s = app.listen(0, () => r(s)); });
+  require(path.join(src, 'realtime')).attach(server);
   const base = `http://127.0.0.1:${server.address().port}`;
   async function call(method, p, body, token, raw) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
-    const res = await fetch(base + p, { method, headers, body: raw !== undefined ? raw : body !== undefined ? JSON.stringify(body) : undefined });
+    const res = await fetch(base + p, { method, headers, redirect: 'manual', body: raw !== undefined ? raw : body !== undefined ? JSON.stringify(body) : undefined });
     const text = await res.text();
     let json = null;
     try { json = JSON.parse(text); } catch (e) { json = text; }
     return { status: res.status, body: json, headers: res.headers };
   }
   const stop = async () => { server.close(); await pool.end(); };
-  return { call, stop, src };
+  const port = server.address().port;
+  const rawCall = (method, p, headers = {}) => fetch(base + p, { method, headers, redirect: 'manual' });
+  return { call, stop, src, port, base, rawCall };
 }
 
 module.exports = { start };

@@ -97,11 +97,13 @@ async function seed(c, { seed: lotsSeed = 42, stock = {} } = {}) {
 }
 
 async function resetAll(opts) {
-  return tx(async (c) => {
+  const out = await tx(async (c) => {
     await c.query('LOCK TABLE meta IN ACCESS EXCLUSIVE MODE');
     await c.query(WIPE);
     return seed(c, opts);
   });
+  require('./cache').clearAll();
+  return out;
 }
 
 async function bootstrap() {

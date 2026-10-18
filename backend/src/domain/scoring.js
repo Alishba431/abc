@@ -1,6 +1,20 @@
 // Pure projection: score is always rebuilt from the append-only event log (Section 5.9).
 const { limits } = require('./sports');
 
+// Lifecycle events beyond start/end (FR-1.3 state machine); several spellings are accepted.
+const STATUS_EVENTS = {
+  match_postpone: 'postponed', match_postponed: 'postponed', postpone: 'postponed',
+  match_cancel: 'cancelled', match_cancelled: 'cancelled', cancel: 'cancelled',
+  match_abandon: 'abandoned', match_abandoned: 'abandoned', abandon: 'abandoned',
+};
+const STATUS_VALUES = ['postponed', 'cancelled', 'abandoned', 'upcoming'];
+
+function statusTarget(e) {
+  if (STATUS_EVENTS[e.type]) return STATUS_EVENTS[e.type];
+  if (e.type === 'match_status' && e.payload && STATUS_VALUES.includes(e.payload.status)) return e.payload.status;
+  return null;
+}
+
 function compensationMap(events) {
   const by = {};
   for (const e of events) if (e.type === 'compensation') by[e.payload.compensates] = e.event_id;
@@ -19,6 +33,7 @@ function project(sport, match, events) {
   for (const e of events) {
     if (e.type === 'match_start') status = 'in_progress';
     else if (e.type === 'match_end') status = 'completed';
+    else if (statusTarget(e)) status = statusTarget(e);
     if (!active(e)) continue;
     const s = t[e.payload.team_id];
     if (e.type === 'score' && s) {
@@ -69,4 +84,4 @@ function scoreLimitError(sport, proj, teamId) {
   return null;
 }
 
-module.exports = { project, scoreLimitError };
+module.exports = { project, scoreLimitError, statusTarget, STATUS_EVENTS, STATUS_VALUES };

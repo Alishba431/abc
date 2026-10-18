@@ -10,10 +10,14 @@ const media = require('./media');
 const metrics = require('./metrics');
 const { redis } = require('./queue');
 const { authorizeIngest } = require('./domain/streaming');
+const { guestWriteGuard } = require('./domain/guest');
+const { resolveShortCode } = require('./domain/qr');
 
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', false);
+// Guest read-only boundary is enforced before anything else about the request (FR-4.3).
+app.use(guestWriteGuard);
 app.use(express.json({ limit: '1mb', strict: false, type: () => true }));
 
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
@@ -46,6 +50,13 @@ app.post('/internal/media/auth', wrap(async (req, res) => {
   const out = await authorizeIngest(b.path);
   if (out.ok) return res.status(200).end();
   res.status(out.status).json({ error: { code: out.code, message: 'Stream key is not valid for publishing.', details: { path: b.path } } });
+}));
+
+// Public dynamic QR short link: 302 to the route that matches the entity's state right now.
+app.get('/q/:code', wrap(async (req, res) => {
+  const v = await resolveShortCode(req.params.code, req.get('user-agent'));
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, v.target_route);
 }));
 
 app.use('/audit/v1', audit);

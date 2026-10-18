@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "main": "src/server.js",
-  "scripts": { "start": "node src/server.js" },
+  "scripts": {
+    "start": "node src/server.js"
+  },
   "dependencies": {
     "express": "4.21.1",
     "ioredis": "5.4.1",
-    "pg": "8.13.1"
+    "pg": "8.13.1",
+    "qrcode": "1.5.4"
   }
 }

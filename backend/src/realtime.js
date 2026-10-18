@@ -1,9 +1,12 @@
-// Realtime layer: a minimal, dependency-free WebSocket server (RFC 6455, server -> client text frames).
-// Clients connect to ws://host:8080/ws and receive every domain event as {"type": ..., "data": {...}}.
+// Realtime layer: dependency-free WebSocket server (RFC 6455, server -> client text frames) plus SSE.
+// ws://host:8080/ws               -> every domain event (mobile app)
+// ws://host:8080/ws/matches/{id}  -> only that match's events (NFR-1 score latency)
+// ws://host:8080/ws/chat/{room}   -> only that chat room's messages
 const crypto = require('crypto');
 
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-const clients = new Set();
+const clients = new Map();
+const sseClients = new Set();
 
 function frame(text) {
   const payload = Buffer.from(text, 'utf8');
@@ -15,17 +18,27 @@ function frame(text) {
   return Buffer.concat([header, payload]);
 }
 
+function filterFor(pathname) {
+  if (pathname === '/ws' || pathname === '/ws/') return {};
+  const m = /^\/ws\/matches\/([^/]+)\/?$/.exec(pathname);
+  if (m) return { matchId: decodeURIComponent(m[1]) };
+  const c = /^\/ws\/chat\/([^/]+)\/?$/.exec(pathname);
+  if (c) return { room: decodeURIComponent(c[1]) };
+  return null;
+}
+
 function attach(server) {
   server.on('upgrade', (req, socket) => {
     const key = req.headers['sec-websocket-key'];
-    if (!req.url.startsWith('/ws') || !key) { socket.destroy(); return; }
+    const filter = filterFor(new URL(req.url, 'http://localhost').pathname);
+    if (!filter || !key) { socket.destroy(); return; }
     const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');
     socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
       + `Sec-WebSocket-Accept: ${accept}\r\n\r\n`);
-    clients.add(socket);
+    socket.setNoDelay(true);
     socket.setKeepAlive(true);
+    clients.set(socket, filter);
     socket.on('data', (buf) => {
-      // Only control frames matter here: close (0x8) -> close, ping (0x9) -> pong.
       const op = buf[0] & 0x0f;
       if (op === 0x8) socket.end(Buffer.from([0x88, 0]));
       else if (op === 0x9) socket.write(Buffer.from([0x8a, 0]));
@@ -33,16 +46,33 @@ function attach(server) {
     const drop = () => clients.delete(socket);
     socket.on('close', drop);
     socket.on('error', drop);
-    socket.write(frame(JSON.stringify({ type: 'hello', data: {} })));
+    if (!filter.matchId && !filter.room) socket.write(frame(JSON.stringify({ type: 'hello', data: {} })));
   });
 }
 
-function broadcast(type, data) {
-  if (!clients.size) return;
-  const f = frame(JSON.stringify({ type, data }));
-  for (const s of clients) { try { s.write(f); } catch (_) { clients.delete(s); } }
+const wants = (f, data) => (!f.matchId || data.match_id === f.matchId) && (!f.room || data.chat_room_id === f.room);
+
+// Server-Sent Events alternative: GET /api/v1/matches/{id}/stream
+function sse(req, res, filter) {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  res.write(': connected\n\n');
+  const client = { res, filter };
+  sseClients.add(client);
+  const beat = setInterval(() => res.write(': ping\n\n'), 15000);
+  req.on('close', () => { clearInterval(beat); sseClients.delete(client); });
 }
 
-const connectionCount = () => clients.size;
+function broadcast(type, data) {
+  const json = JSON.stringify({ type, data });
+  let f = null;
+  for (const [s, filter] of clients) {
+    if (!wants(filter, data)) continue;
+    f = f || frame(json);
+    try { s.write(f); } catch (_) { clients.delete(s); }
+  }
+  for (const c of sseClients) if (wants(c.filter, data)) c.res.write(`event: ${type}\ndata: ${json}\n\n`);
+}
 
-module.exports = { attach, broadcast, frame, connectionCount };
+const connectionCount = () => clients.size + sseClients.size;
+
+module.exports = { attach, broadcast, frame, connectionCount, sse };

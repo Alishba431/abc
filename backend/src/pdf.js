@@ -3,9 +3,16 @@ function esc(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[^\x20-\x7E]/g, '?');
 }
 
-function makePdf(lines) {
+// rects: optional filled squares (e.g. QR modules) as [x, y, w, h] in PDF points.
+function makePdf(lines, { rects = [] } = {}) {
   let y = 800;
-  const ops = ['BT', '/F1 12 Tf'];
+  const ops = [];
+  if (rects.length) {
+    ops.push('0 0 0 rg');
+    for (const [x, ry, w, h] of rects) ops.push(`${x} ${ry} ${w} ${h} re`);
+    ops.push('f');
+  }
+  ops.push('BT', '/F1 12 Tf');
   for (const l of lines) {
     const size = l.size || 12;
     ops.push(`/F1 ${size} Tf`, `1 0 0 1 50 ${y} Tm`, `(${esc(l.text)}) Tj`);

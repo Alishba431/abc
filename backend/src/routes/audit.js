@@ -15,6 +15,10 @@ const { offlineSync } = require('../domain/offline');
 const { signJwt, bearer } = require('../auth');
 const { streamKey } = require('../domain/streaming');
 const { costreamSession } = require('../domain/costream');
+const { qrView, exportQr } = require('../domain/qr');
+const { mergeGuestCart } = require('../domain/guest');
+const { moderationTest } = require('../domain/moderation');
+const { eraseUser } = require('../domain/privacy');
 
 const r = express.Router();
 
@@ -113,5 +117,23 @@ r.post('/costream/session', wrap(async (req, res) => {
   const out = await costreamSession(req.body);
   res.status(out.status).json(out.body);
 }));
+
+r.get('/qr/:entityId/export.:fmt', wrap(async (req, res) => {
+  const out = await exportQr(req.params.entityId, req.params.fmt);
+  res.type(out.type).send(out.body);
+}));
+
+r.get('/qr/:entityId', wrap(async (req, res) => {
+  res.json(await qrView(req.params.entityId, { inspect: req.query.inspect === 'true', ua: req.get('user-agent') }));
+}));
+
+r.post('/guest/cart-merge', wrap(async (req, res) => {
+  const out = await mergeGuestCart(req.body);
+  res.status(out.status).json(out.body);
+}));
+
+r.post('/moderation/test', wrap(async (req, res) => res.status(200).json(await moderationTest(req.body))));
+
+r.delete('/privacy/user/:userId', wrap(async (req, res) => res.status(200).json(await eraseUser(req.params.userId))));
 
 module.exports = r;

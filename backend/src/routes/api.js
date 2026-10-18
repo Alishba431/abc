@@ -13,6 +13,9 @@ const { authorize } = require('../domain/rbac');
 const roster = require('../domain/roster');
 const { offlineSync } = require('../domain/offline');
 const { verifyJwt } = require('../auth');
+const guest = require('../domain/guest');
+const moderation = require('../domain/moderation');
+const realtime = require('../realtime');
 
 const r = express.Router();
 
@@ -40,6 +43,32 @@ r.get('/receipts/:orderId.pdf', wrap(async (req, res) => {
   if (u.role !== 'super_admin' && o.rows[0].response.receipt.payload.customer_id !== u.sub) throw err(403, 'FORBIDDEN', 'Not your receipt.');
   res.type('application/pdf').set('Content-Disposition', `inline; filename="${req.params.orderId}.pdf"`).send(o.rows[0].pdf);
 }));
+
+// ---------- Guest (zero-account) access: read-only + cart staging ----------
+const needGuest = (req) => {
+  const t = guest.guestTokenOf(req);
+  if (!t) throw err(401, 'UNAUTHENTICATED', 'A guest token is required.');
+  return t;
+};
+r.post('/guest/token', wrap(async (req, res) => res.status(201).json(await guest.issueGuestToken())));
+r.get('/guest/cart', wrap(async (req, res) => res.json(await guest.guestCart(needGuest(req)))));
+r.post('/guest/cart', wrap(async (req, res) => res.status(201).json(await guest.stageItem(needGuest(req), req.body))));
+
+// Public read models for the Guest Web Player (no account needed).
+r.get('/public/matches/:id', wrap(async (req, res) => {
+  const s = await scoreView(req.params.id);
+  const prod = await pool.query('SELECT id, data FROM products WHERE id = $1', ['prod-jersey-001']);
+  const variants = await pool.query('SELECT id, price_minor, stock, data FROM variants WHERE product_id = $1 ORDER BY id', ['prod-jersey-001']);
+  res.json({
+    match_id: s.match_id, status: s.status, league_id: s.league_id, version: s.version,
+    home: { ...s.home, name: teamName(s.home.team_id) }, away: { ...s.away, name: teamName(s.away.team_id) },
+    pinned_product: prod.rowCount ? { product_id: 'prod-jersey-001', ...prod.rows[0].data,
+      variants: variants.rows.map((v) => ({ variant_id: v.id, price_minor: v.price_minor, stock: v.stock, ...v.data })) } : null,
+  });
+}));
+r.get('/public/chat/:room', wrap(async (req, res) => res.json({ chat_room_id: req.params.room, messages: await moderation.history(req.params.room) })));
+// SSE alternative to the per-match WebSocket (NFR-1).
+r.get('/matches/:id/stream', (req, res) => realtime.sse(req, res, { matchId: req.params.id }));
 
 // Everything below needs a valid token.
 r.use((req, res, next) => { try { req.user = bearer(req); next(); } catch (e) { next(e); } });
@@ -163,6 +192,16 @@ r.post('/offline-sync', wrap(async (req, res) => {
     else if (a && a.type === 'roster_transfer') { a.payload = { ...(a.payload || {}), requested_by: req.user.sub }; await authorizeTransfer(req.user, a.payload); }
   }
   res.json(await offlineSync(req.body));
+}));
+
+r.post('/chat', wrap(async (req, res) => {
+  const out = await moderation.postChat(req.user, req.body);
+  res.status(out.status).json(out.body);
+}));
+
+r.post('/guest/cart/merge', wrap(async (req, res) => {
+  const out = await guest.mergeStagedCart(req.user, req.body && req.body.guest_token);
+  res.status(out.status).json(out.body);
 }));
 
 module.exports = r;
