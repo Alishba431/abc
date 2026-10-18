@@ -96,7 +96,7 @@ export default function MatchScreen({ route, navigation }) {
               <Text style={styles.product}>{m.pinned_product.name}</Text>
               <Text style={styles.price}>{money(Math.min(...m.pinned_product.variants.map((v) => v.price_minor)))}</Text>
               <Button title={user ? 'Shop now' : 'Sign in to shop'}
-                onPress={() => (user ? navigation.navigate('Main', { screen: 'Store' }) : navigation.navigate('Login'))} />
+                onPress={() => (user ? navigation.navigate('Main', { screen: 'Store' }) : (navigation.popTo ? navigation.popTo('Login') : navigation.navigate('Login')))} />
             </View>
           </Card>
         </>

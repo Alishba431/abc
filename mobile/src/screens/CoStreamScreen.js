@@ -177,7 +177,7 @@ export default function CoStreamScreen({ route, navigation }) {
           <Button title="Send" onPress={send} />
         </View>
       ) : (
-        <View style={{ padding: theme.space(2) }}><Button title="Sign in to chat" onPress={() => navigation.navigate('Login')} /></View>
+        <View style={{ padding: theme.space(2) }}><Button title="Sign in to chat" onPress={() => (navigation.popTo ? navigation.popTo('Login') : navigation.navigate('Login'))} /></View>
       )}
     </View>
   );
