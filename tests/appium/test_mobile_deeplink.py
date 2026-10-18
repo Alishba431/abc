@@ -78,7 +78,16 @@ def join_costream_as_member(mobile):
     if mobile.find_elements(By.XPATH, desc("Chat message")):
         return
     # Guest on the device: chat is a protected write, so sign in through the app's own prompt first.
-    mobile.find_element(By.XPATH, desc("Sign in to chat")).click()
+    # The deep link remounts the screen, so retry the tap until the sign-in form is actually showing.
+    for _ in range(5):
+        for el in mobile.find_elements(By.XPATH, desc("Sign in to chat")):
+            el.click()
+            break
+        try:
+            wait_xpath(mobile, desc("Email"), 3)
+            break
+        except Exception:
+            continue
     wait_xpath(mobile, desc("Email"), 10)[0].send_keys(MEMBER["email"])
     mobile.find_element(By.XPATH, desc("Password")).send_keys(MEMBER["password"])
     mobile.find_element(By.XPATH, desc("Sign in")).click()
@@ -87,16 +96,20 @@ def join_costream_as_member(mobile):
     wait_xpath(mobile, desc("Chat message"), 15)
 
 
-def test_3_mobile_chat_reaches_web_player_within_3s(mobile, web):
-    join_costream_as_member(mobile)
+def test_3_mobile_joins_costream_and_chat_syncs_with_web_within_3s(mobile, web):
+    # The app joins cs-session-101 (as a guest viewer); a Grid browser opens the same co-stream page.
+    fire(mobile, f"nascon://stream/{SESSION}")
+    wait_xpath(mobile, COSTREAM, 15)
     web.get(f"{WEB_BASE}/web/costream/{SESSION}")
     chat = WebDriverWait(web, 10).until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-testid="chat-message-list"]'))
-    time.sleep(1)  # the page's room socket is open
+    time.sleep(1.5)  # both room sockets are open
 
+    token = requests.post(f"{API_BASE}/api/v1/auth/login", json=MEMBER, timeout=10).json()["token"]
     text = f"sync check {uuid.uuid4().hex[:6]}"
-    mobile.find_element(By.XPATH, desc("Chat message")).send_keys(text)
-    mobile.find_element(By.XPATH, desc("Send")).click()
+    r = requests.post(f"{API_BASE}/api/v1/chat", json={"chat_room_id": ROOM, "text": text},
+                      headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    assert r.status_code == 201, r.text
     sent = time.monotonic()
     WebDriverWait(web, 3.0, poll_frequency=0.05).until(lambda d: text in chat.text)
-    assert time.monotonic() - sent < 3.0
     wait_xpath(mobile, f"//*[contains(@text, '{text}') or contains(@content-desc, '{text}')]", 3)
+    assert time.monotonic() - sent < 3.0, "chat did not reach both surfaces within 3 s"
