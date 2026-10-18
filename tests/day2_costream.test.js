@@ -124,3 +124,46 @@ test('FR-3.3 host controls: signed invite, join, mute, spotlight, kick; audit re
   assert.strictEqual((await cs({ session_id: 'cs-ended', host_player_id: 'player-alpha-1', participants: ['player-alpha-1'], simulate_host_drop: true })).body.status, 'terminated');
   assert.strictEqual((await h.call('POST', '/api/v1/costream/cs-ended/control', { action: 'mute', player_id: 'player-alpha-1' }, admin)).body.error.code, 'STREAM_NOT_FOUND');
 });
+
+test('edge case 1 over WebSocket: host presence drop hands off within 1.5 s; missed heartbeats terminate a solo session', async () => {
+  const net = require('net');
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const rawWs = (p) => new Promise((resolve, reject) => {
+    const s = net.connect(h.port, '127.0.0.1', () => s.write(`GET ${p} HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n`
+      + `Sec-WebSocket-Key: ${crypto.randomBytes(16).toString('base64')}\r\nSec-WebSocket-Version: 13\r\n\r\n`));
+    s.once('data', (d) => (String(d).startsWith('HTTP/1.1 101') ? resolve(s) : reject(new Error('no upgrade'))));
+    s.once('close', () => reject(new Error('closed')));
+    s.on('error', () => {});
+  });
+  const view = async (id) => (await h.call('GET', `/api/v1/public/costream/${id}`)).body;
+  const until = async (id, ok, ms) => {
+    const t0 = Date.now();
+    let v;
+    while (Date.now() - t0 < ms) { v = await view(id); if (ok(v)) return [v, Date.now() - t0]; await wait(25); }
+    return [v, Infinity];
+  };
+  const token = (await h.call('POST', '/api/v1/auth/login', { email: 'player@nascon.test', password: 'Nascon@26' })).body.token;
+  const admin = (await h.call('POST', '/api/v1/auth/login', { email: 'admin@nascon.test', password: 'Nascon@26' })).body.token;
+
+  assert.strictEqual((await cs({ session_id: 'cs-presence', host_player_id: 'player-alpha-1', participants: FOUR })).status, 201);
+  const before = await view('cs-presence');
+  await assert.rejects(rawWs('/ws/costream/cs-presence?access_token=forged.token.here'));
+  (await rawWs(`/ws/costream/cs-presence?access_token=${admin}`)).destroy(); // not a broadcaster: no effect
+  const host = await rawWs(`/ws/costream/cs-presence?access_token=${token}`);
+  await wait(50);
+  host.destroy(); // abrupt: no close frame
+  const [after, took] = await until('cs-presence', (v) => v.handoff_occurred, 1500);
+  assert.ok(took < 1500, `handoff took ${took} ms`);
+  assert.deepStrictEqual([after.active_host, after.handoff_occurred, after.participant_count, after.active_participants],
+    ['player-alpha-2', true, 3, ['player-alpha-2', 'player-beta-1', 'player-beta-2']]);
+  assert.deepStrictEqual([after.chat_room_id, after.composite_playback_url], [before.chat_room_id, before.composite_playback_url]);
+
+  assert.strictEqual((await cs({ session_id: 'cs-presence-solo', host_player_id: 'player-alpha-1', participants: ['player-alpha-1'], layout: 'solo' })).status, 201);
+  const silent = await rawWs(`/ws/costream/cs-presence-solo?access_token=${token}`); // never answers the server's pings
+  const [solo, soloTook] = await until('cs-presence-solo', (v) => v.status === 'terminated', 2500);
+  assert.ok(soloTook < 1500, `heartbeat loss detected after ${soloTook} ms`);
+  assert.deepStrictEqual([solo.active_host, solo.participant_count, solo.composite_playback_url], [null, 0, null]);
+  silent.destroy();
+  assert.strictEqual(await require(h.src + '/domain/costream').presenceLost('cs-presence-solo', 'player-alpha-1'), null);
+  assert.strictEqual(await require(h.src + '/domain/costream').presenceLost('cs-missing', 'player-alpha-1'), null);
+});

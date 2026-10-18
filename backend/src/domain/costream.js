@@ -7,6 +7,7 @@ const { withLock } = require('../util');
 const { isObj } = require('../validate');
 const { publish } = require('../queue');
 const { missingPlayer } = require('./players');
+const media = require('../media');
 
 const LAYOUTS = ['solo', 'grid_2', 'grid_4', 'spotlight'];
 const MAX_PARTICIPANTS = 4;
@@ -224,4 +225,29 @@ async function joinWithInvite(user, sessionId, b) {
   });
 }
 
-module.exports = { costreamSession, getSession, hostControl, joinWithInvite, evaluate, layoutFits };
+// Edge case 1 over WebSocket: a broadcaster's presence socket dropped. Same deterministic rule as simulate_host_drop:
+// the next participant in array order takes over (chat room and composite URL unchanged), or the session terminates
+// cleanly and its composite path is closed so no media pipeline is left behind.
+async function presenceLost(sessionId, playerId) {
+  return withLock('costream:' + sessionId, async () => {
+    const r = await pool.query('SELECT state FROM costream_sessions WHERE session_id = $1', [sessionId]);
+    if (!r.rowCount) return null;
+    const s = r.rows[0].state;
+    const l = live(s);
+    if (s.status !== 'active' || !l.participants.includes(playerId)) return null;
+    const remaining = l.participants.filter((p) => p !== playerId);
+    const wasHost = s.active_host === playerId;
+    const controls = { ...(s.controls || {}), joined: [] };
+    const next = remaining.length
+      ? { ...s, controls, active_host: wasHost ? remaining[0] : s.active_host, handoff_occurred: s.handoff_occurred || wasHost,
+        active_participants: remaining, participant_count: remaining.length }
+      : { ...s, controls, status: 'terminated', active_host: null, handoff_occurred: false, active_participants: [], participant_count: 0 };
+    await pool.query('UPDATE costream_sessions SET state = $2, updated_at = now() WHERE session_id = $1', [sessionId, next]);
+    publish('costream.session_updated', { session_id: sessionId, status: next.status, active_host: next.active_host,
+      action: 'disconnect', player_id: playerId });
+    if (next.status === 'terminated') await media.kickPath(`costream/${sessionId}`).catch(() => false);
+    return view(sessionId, next);
+  });
+}
+
+module.exports = { costreamSession, getSession, hostControl, joinWithInvite, presenceLost, evaluate, layoutFits };

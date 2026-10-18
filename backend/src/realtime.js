@@ -24,33 +24,63 @@ function filterFor(pathname) {
   if (m) return { matchId: decodeURIComponent(m[1]) };
   const c = /^\/ws\/chat\/([^/]+)\/?$/.exec(pathname);
   if (c) return { room: decodeURIComponent(c[1]) };
+  const s = /^\/ws\/costream\/([^/]+)\/?$/.exec(pathname);
+  if (s) return { session: decodeURIComponent(s[1]) };
   return null;
 }
+
+// Broadcaster presence on /ws/costream/{id}?access_token=<JWT>: the server pings every 300 ms, and a broadcaster that
+// goes silent for 900 ms (or whose TCP connection drops) is treated as an abrupt disconnect -> host handoff < 1.5 s.
+const PRESENCE_PING_MS = 300;
+const PRESENCE_TIMEOUT_MS = 900;
 
 function attach(server) {
   server.on('upgrade', (req, socket) => {
     const key = req.headers['sec-websocket-key'];
-    const filter = filterFor(new URL(req.url, 'http://localhost').pathname);
+    const url = new URL(req.url, 'http://localhost');
+    const filter = filterFor(url.pathname);
     if (!filter || !key) { socket.destroy(); return; }
+    if (filter.session && url.searchParams.has('access_token')) {
+      try {
+        const claims = require('./auth').verifyJwt(url.searchParams.get('access_token'));
+        if (claims.player_id) filter.presence = claims.player_id;
+      } catch (e) { socket.destroy(); return; }
+    }
     const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');
     socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
       + `Sec-WebSocket-Accept: ${accept}\r\n\r\n`);
     socket.setNoDelay(true);
     socket.setKeepAlive(true);
     clients.set(socket, filter);
+    let lastSeen = Date.now();
     socket.on('data', (buf) => {
+      lastSeen = Date.now();
       const op = buf[0] & 0x0f;
       if (op === 0x8) socket.end(Buffer.from([0x88, 0]));
       else if (op === 0x9) socket.write(Buffer.from([0x8a, 0]));
     });
-    const drop = () => clients.delete(socket);
+    const beat = filter.presence ? setInterval(() => {
+      if (Date.now() - lastSeen > PRESENCE_TIMEOUT_MS) socket.destroy();
+      else socket.write(Buffer.from([0x89, 0]));
+    }, PRESENCE_PING_MS) : null;
+    const drop = () => {
+      if (!clients.delete(socket)) return;
+      if (beat) clearInterval(beat);
+      if (!filter.presence) return;
+      const stillHere = [...clients.values()].some((f) => f.session === filter.session && f.presence === filter.presence);
+      if (!stillHere) {
+        require('./domain/costream').presenceLost(filter.session, filter.presence)
+          .catch((e) => console.error('presence handoff failed', e.message));
+      }
+    };
     socket.on('close', drop);
     socket.on('error', drop);
-    if (!filter.matchId && !filter.room) socket.write(frame(JSON.stringify({ type: 'hello', data: {} })));
+    if (!filter.matchId && !filter.room && !filter.session) socket.write(frame(JSON.stringify({ type: 'hello', data: {} })));
   });
 }
 
-const wants = (f, data) => (!f.matchId || data.match_id === f.matchId) && (!f.room || data.chat_room_id === f.room);
+const wants = (f, data) => (!f.matchId || data.match_id === f.matchId) && (!f.room || data.chat_room_id === f.room)
+  && (!f.session || data.session_id === f.session);
 
 // Server-Sent Events alternative: GET /api/v1/matches/{id}/stream
 function sse(req, res, filter) {

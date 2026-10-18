@@ -40,12 +40,10 @@ QA_PYTHON=~/venv/bin/python ./tests/run_selenium.sh   # same, from a host venv i
 docker run --rm --user "$(id -u):$(id -g)" --network host -v "$PWD/tests":/tests grafana/k6:0.54.0 run \
   --summary-export=/tests/reports/k6-summary.json /tests/k6_load.js
 ```
-Appium (phone with USB debugging, League Ops APK installed, its Server setting pointing at this laptop):
+Appium (phone on USB with debugging on, League Ops APK installed, app Server set to `http://localhost:8080`):
 ```bash
-adb devices && appium --port 4723 &                 # uiautomator2 driver; GET :4723/status → ready
-pytest tests/appium -v -p no:cacheprovider --junitxml=tests/reports/appium-report.xml
+./tests/run_appium.sh    # adb reverse 8080/8888/8889, starts Appium on 4723 if needed → tests/reports/appium-report.xml
 ```
-Over USB, `adb reverse tcp:8080 tcp:8080 && adb reverse tcp:8888 tcp:8888` lets the app use `http://localhost:8080`.
 CI: `.github/workflows/autograde.yml` runs compose, the contract probes, the Grid check, Selenium, k6 and the unit
 tests on every push to `main`, with fresh salts per run.
 
