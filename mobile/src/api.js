@@ -20,6 +20,10 @@ const MESSAGES = {
   RATE_LIMITED: 'Too many requests. Please wait a few seconds and try again.',
   VALIDATION_ERROR: 'Some of the information entered is missing or invalid.',
   INVALID_BASE_VERSION: 'This change was based on newer data than the server has.',
+  PLAYER_NOT_FOUND: 'That player profile could not be found.',
+  STREAM_NOT_FOUND: "You don't have an active stream key yet.",
+  KEY_REVOKED: 'That stream key has been revoked. Get a new key to go live.',
+  GUEST_WRITE_FORBIDDEN: 'Please sign in to do that.',
 };
 
 export function friendlyError(code, fallback) {

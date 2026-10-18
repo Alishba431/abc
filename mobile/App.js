@@ -19,6 +19,9 @@ import StoreScreen from './src/screens/StoreScreen';
 import RosterScreen from './src/screens/RosterScreen';
 import ScoringScreen from './src/screens/ScoringScreen';
 import SyncScreen from './src/screens/SyncScreen';
+import MeScreen from './src/screens/MeScreen';
+import AthleteScreen from './src/screens/AthleteScreen';
+import ClubsScreen from './src/screens/ClubsScreen';
 import { SyncProvider } from './src/SyncContext';
 import { theme } from './src/theme';
 
@@ -30,20 +33,27 @@ const tabIcon = (name) => ({ color, focused, size }) => (
   <Ionicons name={focused ? name : `${name}-outline`} size={size} color={color} accessibilityElementsHidden />
 );
 
-// Tabs shown per role: each role sees only what it can use.
+// Tabs per role (RBAC): each role sees only what it can use; the first tab is that role's home.
+const TAB = {
+  me: { name: 'Me', component: MeScreen, icon: 'person' },
+  fixtures: { name: 'Fixtures', component: FixturesScreen, icon: 'calendar' },
+  standings: { name: 'Standings', component: StandingsScreen, icon: 'trophy' },
+  store: { name: 'Store', component: StoreScreen, icon: 'cart' },
+  club: { name: 'Club', component: ClubScreen, icon: 'shield' },
+  clubs: { name: 'Clubs', component: ClubsScreen, icon: 'shield' },
+  roster: { name: 'Roster', component: RosterScreen, icon: 'people' },
+  sync: { name: 'Sync', component: SyncScreen, icon: 'sync' },
+  settings: { name: 'Settings', component: SettingsScreen, icon: 'settings' },
+};
+
 function tabsFor(role) {
-  const tabs = [
-    { name: 'Fixtures', component: FixturesScreen, icon: 'calendar' },
-    { name: 'Standings', component: StandingsScreen, icon: 'trophy' },
-    { name: 'Store', component: StoreScreen, icon: 'cart' },
-    { name: 'Club', component: ClubScreen, icon: 'shield' },
-  ];
-  if (role === 'club_manager' || role === 'super_admin') tabs.push({ name: 'Roster', component: RosterScreen, icon: 'people' });
-  if (role === 'league_organizer' || role === 'club_manager' || role === 'super_admin') {
-    tabs.push({ name: 'Sync', component: SyncScreen, icon: 'sync' });
+  switch (role) {
+    case 'player': return [TAB.me, TAB.fixtures, TAB.standings, TAB.store, TAB.settings];
+    case 'viewer': return [TAB.fixtures, TAB.standings, TAB.clubs, TAB.store, TAB.settings];
+    case 'club_manager': return [TAB.roster, TAB.fixtures, TAB.standings, TAB.club, TAB.store, TAB.sync, TAB.settings];
+    case 'league_organizer': return [TAB.fixtures, TAB.standings, TAB.clubs, TAB.store, TAB.sync, TAB.settings];
+    default: return [TAB.fixtures, TAB.standings, TAB.clubs, TAB.roster, TAB.store, TAB.sync, TAB.settings];
   }
-  tabs.push({ name: 'Settings', component: SettingsScreen, icon: 'settings' });
-  return tabs;
 }
 
 function MainTabs() {
@@ -81,6 +91,8 @@ function Root() {
           <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="Match" component={MatchScreen} options={({ route }) => ({ title: route.params.title || 'Match' })} />
           <Stack.Screen name="Scoring" component={ScoringScreen} options={{ title: 'Record score' }} />
+          <Stack.Screen name="Athlete" component={AthleteScreen} options={({ route }) => ({ title: route.params.title || 'Athlete' })} />
+          <Stack.Screen name="ClubDetail" component={ClubScreen} options={({ route }) => ({ title: route.params.title || 'Club' })} />
         </>
       ) : (
         <>

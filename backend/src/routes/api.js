@@ -16,6 +16,7 @@ const { verifyJwt } = require('../auth');
 const guest = require('../domain/guest');
 const moderation = require('../domain/moderation');
 const realtime = require('../realtime');
+const { streamKey } = require('../domain/streaming');
 
 const r = express.Router();
 
@@ -192,6 +193,91 @@ r.post('/offline-sync', wrap(async (req, res) => {
     else if (a && a.type === 'roster_transfer') { a.payload = { ...(a.payload || {}), requested_by: req.user.sub }; await authorizeTransfer(req.user, a.payload); }
   }
   res.json(await offlineSync(req.body));
+}));
+
+// ---------- Role-aware athlete features (FR-3.1) ----------
+async function kickoffs() {
+  const kick = (await pool.query("SELECT key, value FROM meta WHERE key LIKE 'kickoff:%'")).rows;
+  return Object.fromEntries(kick.map((k) => [k.key.slice(8), k.value]));
+}
+
+async function athleteProfile(id, viewer) {
+  const p = await pool.query('SELECT * FROM club_players WHERE id = $1', [id]);
+  if (!p.rowCount) throw err(404, 'PLAYER_NOT_FOUND', 'That athlete does not exist.', { player_id: id });
+  const row = p.rows[0];
+  if (viewer.role !== 'super_admin' && row.tenant_id !== viewer.tenant_id) throw err(403, 'FORBIDDEN', 'Not allowed.');
+  const club = (await pool.query('SELECT data FROM clubs WHERE id = $1', [row.club_id])).rows[0];
+  const kick = await kickoffs();
+  const ms = (await pool.query('SELECT id FROM matches WHERE home = $1 OR away = $1 ORDER BY ord', [row.club_id])).rows;
+  const career = { played: 0, won: 0, drawn: 0, lost: 0, scored: 0, conceded: 0 };
+  const upcoming = [];
+  for (const m of ms) {
+    const s = await scoreView(m.id);
+    const home = s.home.team_id === row.club_id;
+    const mine = home ? s.home : s.away;
+    const other = home ? s.away : s.home;
+    if (s.status === 'completed' && s.outcome !== 'undecided') {
+      career.played += 1; career.scored += mine.score; career.conceded += other.score;
+      if (s.outcome === 'draw') career.drawn += 1; else if (s.winner_team_id === row.club_id) career.won += 1; else career.lost += 1;
+    } else if (s.status === 'upcoming' || s.status === 'in_progress') {
+      upcoming.push({ match_id: s.match_id, status: s.status, home, opponent: teamName(other.team_id), kickoff: kick[m.id] || null,
+        score: `${s.home.score} - ${s.away.score}` });
+    }
+  }
+  const followers = (await pool.query('SELECT count(*)::int AS n FROM follows WHERE athlete_id = $1', [id])).rows[0].n;
+  const following = (await pool.query('SELECT 1 FROM follows WHERE follower_id = $1 AND athlete_id = $2', [viewer.sub, id])).rowCount > 0;
+  return {
+    player_id: id, name: row.data.name, position: row.data.position, bio: row.data.bio || '', social: row.data.social || '',
+    club: { club_id: row.club_id, name: club ? club.data.name : row.club_id }, career, upcoming, followers, following,
+    can_edit: viewer.role === 'super_admin' || viewer.player_id === id
+      || (viewer.role === 'club_manager' && (viewer.club_ids || []).includes(row.club_id)),
+    vods: [],
+  };
+}
+
+r.get('/clubs', wrap(async (req, res) => {
+  const rows = (await pool.query('SELECT id, tenant_id, data FROM clubs WHERE tenant_id = $1 OR $2 ORDER BY id',
+    [tenantOf(req.user), req.user.role === 'super_admin'])).rows;
+  res.json(rows.map((c) => ({ club_id: c.id, name: c.data.name, venue: c.data.venue.name })));
+}));
+
+r.get('/me/profile', wrap(async (req, res) => {
+  if (!req.user.player_id) throw err(404, 'PLAYER_NOT_FOUND', 'This account has no athlete profile.');
+  res.json(await athleteProfile(req.user.player_id, req.user));
+}));
+
+r.get('/athletes/:id', wrap(async (req, res) => res.json(await athleteProfile(req.params.id, req.user))));
+
+// Follow / unfollow: idempotent per (follower, athlete); the primary key makes concurrent toggles drift-free.
+r.post('/athletes/:id/follow', wrap(async (req, res) => {
+  const want = !(req.body && req.body.follow === false);
+  await athleteProfile(req.params.id, req.user);
+  if (want) await pool.query('INSERT INTO follows(follower_id, athlete_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [req.user.sub, req.params.id]);
+  else await pool.query('DELETE FROM follows WHERE follower_id = $1 AND athlete_id = $2', [req.user.sub, req.params.id]);
+  const followers = (await pool.query('SELECT count(*)::int AS n FROM follows WHERE athlete_id = $1', [req.params.id])).rows[0].n;
+  res.json({ athlete_id: req.params.id, following: want, followers });
+}));
+
+// Edit a player profile: same policy-matrix check as the P5 probe (player = self, manager = own club, admin = any).
+r.patch('/players/:id', wrap(async (req, res) => {
+  await authorize(req.user, 'player:update', 'player', req.params.id);
+  const b = req.body || {};
+  const bad = [];
+  if (b.name !== undefined && (typeof b.name !== 'string' || !b.name.trim() || b.name.length > 60)) bad.push('name');
+  if (b.bio !== undefined && (typeof b.bio !== 'string' || b.bio.length > 280)) bad.push('bio');
+  if (b.social !== undefined && (typeof b.social !== 'string' || b.social.length > 60)) bad.push('social');
+  if (bad.length) throw validation(bad);
+  const patch = {};
+  for (const k of ['name', 'bio', 'social']) if (b[k] !== undefined) patch[k] = b[k].trim();
+  await pool.query('UPDATE club_players SET data = data || $2 WHERE id = $1', [req.params.id, patch]);
+  res.json(await athleteProfile(req.params.id, req.user));
+}));
+
+// Creator tools: an athlete manages their own stream key from the app (OBS / Larix / FFmpeg ingest).
+r.post('/me/stream-key', wrap(async (req, res) => {
+  if (!req.user.player_id) throw err(403, 'FORBIDDEN', 'Only athletes can go live.');
+  const out = await streamKey({ action: (req.body && req.body.action) || 'generate', player_id: req.user.player_id, label: 'Mobile app' });
+  res.status(out.status).json(out.body);
 }));
 
 r.post('/chat', wrap(async (req, res) => {

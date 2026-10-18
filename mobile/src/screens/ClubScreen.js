@@ -1,13 +1,13 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../AuthContext';
 import { Card, EmptyState, Loading, Message } from '../components/ui';
 import { theme } from '../theme';
 import { savedLabel, useCached } from '../useCached';
 
-export default function ClubScreen() {
+export default function ClubScreen({ route, navigation }) {
   const { user } = useAuth();
-  const clubId = (user.club_ids && user.club_ids[0]) || 'club-alpha-1';
+  const clubId = (route && route.params && route.params.clubId) || (user.club_ids && user.club_ids[0]) || 'club-alpha-1';
   const q = useCached('club:' + clubId, `/api/v1/clubs/${clubId}`);
   if (q.loading) return <Loading label="Loading club…" />;
   const c = q.data;
@@ -31,7 +31,10 @@ export default function ClubScreen() {
       <Text style={styles.h}>Roster</Text>
       <Card>
         {c.roster.length === 0 ? <EmptyState title="No players registered yet" /> : c.roster.map((p) => (
-          <View key={p.id} style={styles.line}><Text style={styles.val}>{p.name}</Text><Text style={styles.role}>{p.position.toUpperCase()}</Text></View>
+          <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`${p.name}, ${p.position}. Open athlete profile`}
+            onPress={() => navigation.navigate('Athlete', { playerId: p.id, title: p.name })} style={styles.line}>
+            <Text style={styles.val}>{p.name}</Text><Text style={styles.role}>{p.position.toUpperCase()}  ›</Text>
+          </Pressable>
         ))}
       </Card>
     </ScrollView>
