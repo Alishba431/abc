@@ -8,7 +8,7 @@ import { Card } from './ui';
 
 const POSITION = { gk: 'Goalkeeper', df: 'Defender', mf: 'Midfielder', fw: 'Forward' };
 
-export default function AthleteProfileView({ p, onOpenMatch, children }) {
+export default function AthleteProfileView({ p, onOpenMatch, onOpenVod, children }) {
   const c = p.career;
   const stats = [['Played', c.played], ['Won', c.won], ['Drawn', c.drawn], ['Lost', c.lost], ['Goals for', c.scored], ['Goals against', c.conceded]];
   return (
@@ -47,6 +47,25 @@ export default function AthleteProfileView({ p, onOpenMatch, children }) {
           </Pressable>
         ))}
       </Card>
+
+      {p.vods && p.vods.length ? (
+        <>
+          <Text style={styles.h} accessibilityRole="header">REPLAYS</Text>
+          <Card>
+            {p.vods.map((v) => (
+              <Pressable key={v.vod_id} accessibilityRole="button" style={styles.match}
+                accessibilityLabel={`Replay from ${new Date(v.started_at).toLocaleString()}, ${Math.round(v.duration_s)} seconds`}
+                onPress={() => onOpenVod && onOpenVod(v)}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.opp}>▶ Live stream replay</Text>
+                  <Text style={styles.sub}>{new Date(v.started_at).toLocaleString()} · {Math.max(1, Math.round(v.duration_s / 60))} min</Text>
+                </View>
+                <Text style={styles.tag}>VOD</Text>
+              </Pressable>
+            ))}
+          </Card>
+        </>
+      ) : null}
     </View>
   );
 }

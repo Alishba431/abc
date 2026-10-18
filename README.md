@@ -61,5 +61,7 @@ Expo / React Native app in `mobile/`. Latest APK: GitHub Releases (published by 
 from the EAS URL in `mobile/release/apk-url.txt`); the Day 1 build is still at `mobile/release/app-release.apk`.
 Set the server address in the app's Settings screen (phone: `http://<laptop-LAN-IP>:8080`).
 Guests can watch live matches, scan QR codes and open `nascon://` links without signing in; chat, follow and
-checkout ask for sign-in. Build: `cd mobile && EAS_NO_VCS=1 eas build -p android --profile preview` (the root
+checkout ask for sign-in. Athletes get a Go Live screen (key for OBS / Larix, or "Broadcast from this phone" over WHIP —
+the camera needs a secure origin, so use USB + `adb reverse` or HTTPS), replays of their recorded streams, and
+co-stream host controls (invite, mute, spotlight, remove). Build: `cd mobile && EAS_NO_VCS=1 eas build -p android --profile preview` (the root
 `.easignore` keeps the upload to the app only).

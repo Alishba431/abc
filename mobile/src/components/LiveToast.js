@@ -11,6 +11,8 @@ function describe(msg) {
   if (msg.type === 'costream.session_updated' && d.status === 'active') return `Co-stream ${d.session_id} is live · host ${d.active_host}`;
   if (msg.type === 'order.status_changed') return `Order ${d.order_id} is now ${d.to}`;
   if (msg.type === 'stream.key_revoked') return 'A live stream has ended';
+  if (msg.type === 'costream.invite') return `Co-stream invite: ${d.player_id} was invited to ${d.session_id}`;
+  if (msg.type === 'vod.indexed') return 'A new stream replay is ready';
   return null;
 }
 

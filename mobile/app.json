@@ -40,7 +40,8 @@
         "expo-camera",
         {
           "cameraPermission": "League Ops uses the camera to scan match and stream QR codes.",
-          "recordAudioAndroid": false
+          "recordAudioAndroid": true,
+          "microphonePermission": "League Ops uses the microphone when you broadcast live from this phone."
         }
       ]
     ],

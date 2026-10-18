@@ -32,7 +32,8 @@ export default function AthleteScreen({ route, navigation }) {
   return (
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={{ padding: theme.space(2) }}
       refreshControl={<RefreshControl refreshing={false} onRefresh={q.reload} tintColor={theme.accent} />}>
-      <AthleteProfileView p={p} onOpenMatch={(m) => navigation.navigate('Match', { matchId: m.match_id, title: `vs ${m.opponent}` })}>
+      <AthleteProfileView p={p} onOpenMatch={(m) => navigation.navigate('Match', { matchId: m.match_id, title: `vs ${m.opponent}` })}
+        onOpenVod={(v) => navigation.navigate('Web', { video: v.playback_url, title: 'Replay' })}>
         <View style={{ alignSelf: 'stretch', marginTop: theme.space(2) }}>
           <Button title={p.following ? 'Following ✓  (tap to unfollow)' : 'Follow'} variant={p.following ? 'secondary' : 'accent'}
             onPress={toggle} loading={busy} />

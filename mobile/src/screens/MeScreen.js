@@ -58,11 +58,12 @@ export default function MeScreen({ navigation }) {
     <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={{ padding: theme.space(2) }}
       refreshControl={<RefreshControl refreshing={false} onRefresh={q.reload} tintColor={theme.accent} />}>
       {q.stale ? <Message kind="info" text={savedLabel(q.updatedAt)} /> : null}
-      <AthleteProfileView p={p} onOpenMatch={(m) => navigation.navigate('Match', { matchId: m.match_id, title: `vs ${m.opponent}` })} />
+      <AthleteProfileView p={p} onOpenMatch={(m) => navigation.navigate('Match', { matchId: m.match_id, title: `vs ${m.opponent}` })}
+        onOpenVod={(v) => navigation.navigate('Web', { video: v.playback_url, title: 'Replay' })} />
 
       <Text style={styles.h} accessibilityRole="header">GO LIVE</Text>
       <Card>
-        <Text style={styles.p}>Broadcast from OBS, Larix or FFmpeg. Your stream key is private: anyone with it can stream as you.</Text>
+        <Text style={styles.p}>Broadcast from this phone, or from OBS, Larix or FFmpeg. Your stream key is private: anyone with it can stream as you.</Text>
         <Message kind={liveMsg.kind} text={liveMsg.text} />
         {live ? (
           <View>
@@ -74,6 +75,9 @@ export default function MeScreen({ navigation }) {
             <Text selectable style={styles.mono}>{live.ingest_endpoints.webrtc}</Text>
             <Text style={styles.label}>Viewers watch at</Text>
             <Text selectable style={styles.mono}>{live.playback_url}</Text>
+            <Button title="Broadcast from this phone" variant="accent"
+              accessibilityHint="Opens the camera publisher (WebRTC / WHIP). Works over USB with adb reverse, or over HTTPS"
+              onPress={() => navigation.navigate('Web', { url: live.ingest_endpoints.webrtc.replace(/\/whip$/, '/publish'), title: 'Broadcasting' })} />
             <Button title="Rotate key" variant="secondary" loading={busy === 'rotate'}
               onPress={() => confirm('Rotate stream key?', 'Your current stream will be cut and the old key stops working.', 'rotate')} />
             <Button title="Stop stream & revoke key" variant="danger" loading={busy === 'revoke'}
