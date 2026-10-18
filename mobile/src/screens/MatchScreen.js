@@ -33,7 +33,7 @@ export default function MatchScreen({ route, navigation }) {
   };
   const live = m.status === 'in_progress';
   return (
-    <ScrollView style={{ backgroundColor: theme.bg }} contentContainerStyle={{ padding: theme.space(2) }}>
+    <ScrollView testID="match-screen" style={{ backgroundColor: theme.bg }} contentContainerStyle={{ padding: theme.space(2) }}>
       {q.stale ? <Message kind="info" text={savedLabel(q.updatedAt)} /> : null}
       <View style={styles.board} accessibilityLabel={`${STATUS_LABEL[m.status]}. ${m.home.name} ${m.home.score}, ${m.away.name} ${m.away.score}`}>
         <View style={[styles.band, { backgroundColor: live ? theme.live : theme.accent }]} />

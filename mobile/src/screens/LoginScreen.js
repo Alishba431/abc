@@ -38,7 +38,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+      <ScrollView testID="login-screen" contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
           <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain"
             accessibilityRole="header" accessibilityLabel="League Ops" />
