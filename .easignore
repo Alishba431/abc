@@ -1,0 +1,19 @@
+# EAS Build archive (used with EAS_NO_VCS=1; replaces every .gitignore for the upload): only the Expo app is needed.
+/backend/
+/tests/
+/.github/
+/mobile/release/
+/mobile/android/
+/mobile/ios/
+node_modules/
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+.env
+.env*.local

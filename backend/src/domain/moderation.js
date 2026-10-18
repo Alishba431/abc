@@ -74,7 +74,7 @@ function moderateOne(roomId, r, m) {
   if (r.recent.length > 100) r.recent.shift();
   persist(roomId, r, stored);
   publish('chat.message', stored);
-  return { flagged: hit, dropped: false, message: out };
+  return { flagged: hit, dropped: false, message: out, stored };
 }
 
 function validateTest(b) {
@@ -146,7 +146,8 @@ async function postChat(user, b) {
     r.posts.set(sender, times);
     const res = moderateOne(b.chat_room_id, r, { message_id: b.message_id || `msg-${crypto.randomBytes(5).toString('hex')}`, sender, text: b.text });
     if (res.dropped) return { status: 200, body: { accepted: false, flagged: true, reason: res.reason } };
-    return { status: 201, body: { accepted: true, message: res.message } };
+    // Same object (with seq) the room's sockets receive, so clients can de-duplicate their own echo.
+    return { status: 201, body: { accepted: true, message: res.stored } };
   });
 }
 

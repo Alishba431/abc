@@ -1,0 +1,9 @@
+{
+  "hls_manifest_status": 200,
+  "active_streams_while_live": 1,
+  "bitrate_kbps_while_live": 396.0,
+  "revoke_status": 200,
+  "ingest_cut_seconds": 0.146,
+  "revoked_key_republish_refused": true,
+  "pass": true
+}

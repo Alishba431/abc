@@ -1,6 +1,6 @@
-// 4-way co-stream: composite HLS video, broadcasters, and the one synchronized chat room (chat-{session}).
-import React, { useEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+// 4-way co-stream: composite HLS video, broadcasters (with host controls), and the one synchronized chat room.
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
@@ -23,31 +23,74 @@ h.on(Hls.Events.MANIFEST_PARSED,function(){document.getElementById('n').style.di
 h.on(Hls.Events.ERROR,function(e,d){if(d.fatal){h.destroy();setTimeout(go,5000);}});}else{v.src='${url}';}}go();</script></body></html>`;
 }
 
+const short = (p) => p.replace('player-', '');
+
+function SmallButton({ title, onPress, tone = theme.primaryText }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress}
+      style={({ pressed }) => [styles.small, { borderColor: tone, opacity: pressed ? 0.7 : 1 }]}>
+      <Text style={[styles.smallText, { color: tone }]}>{title}</Text>
+    </Pressable>
+  );
+}
+
 export default function CoStreamScreen({ route, navigation }) {
-  const { sessionId } = route.params;
+  const { sessionId, invite } = route.params;
   const { user } = useAuth();
   const [base, setBase] = useState(null);
   const [session, setSession] = useState(null);
   const [error, setError] = useState('');
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [guestId, setGuestId] = useState('');
   const [note, setNote] = useState({ kind: 'info', text: '' });
   const seen = useRef(new Set());
   const room = `chat-${sessionId}`;
+  const isHost = !!user && !!session && (user.role === 'super_admin' || user.player_id === session.active_host);
 
   const add = (m) => {
-    const key = `${m.seq || m.message_id}`;
+    const key = String(m.message_id || m.seq);
     if (seen.current.has(key)) return;
     seen.current.add(key);
     setMessages((list) => [...list, m]);
   };
 
+  const load = useCallback(() => api(`/api/v1/public/costream/${sessionId}`, { auth: false })
+    .then(setSession).catch((e) => setError(e.message)), [sessionId]);
+
   useEffect(() => {
     getServerUrl().then(setBase);
-    api(`/api/v1/public/costream/${sessionId}`, { auth: false }).then(setSession).catch((e) => setError(e.message));
+    load();
     api(`/api/v1/public/chat/${room}`, { auth: false }).then((r) => r.messages.forEach(add)).catch(() => {});
-    return subscribe(`/ws/chat/${room}`, (msg) => { if (msg.type === 'chat.message') add(msg.data); });
+    const offChat = subscribe(`/ws/chat/${room}`, (msg) => { if (msg.type === 'chat.message') add(msg.data); });
+    const offBus = subscribe('/ws', (msg) => {
+      if (msg.type === 'costream.session_updated' && msg.data.session_id === sessionId) load();
+    });
+    return () => { offChat(); offBus(); };
   }, [sessionId]);
+
+  // Opened from an invite link (nascon://stream/{id}?invite=…): join as a broadcaster.
+  useEffect(() => {
+    if (!invite) return;
+    if (!user) { setNote({ kind: 'info', text: 'Sign in with the invited athlete account to join as a broadcaster.' }); return; }
+    api(`/api/v1/costream/${sessionId}/join`, { method: 'POST', body: { invite_token: invite } })
+      .then((s) => { setSession(s); setNote({ kind: 'success', text: "You've joined the co-stream." }); })
+      .catch((e) => setNote({ kind: 'error', text: e.message }));
+  }, [invite, user]);
+
+  const control = async (action, playerId) => {
+    try {
+      const r = await api(`/api/v1/costream/${sessionId}/control`, { method: 'POST', body: { action, player_id: playerId } });
+      if (action === 'invite') {
+        setGuestId('');
+        await Share.share({ message: `Join my League Ops co-stream: ${r.deep_link_uri}` });
+      } else {
+        setSession(r);
+      }
+    } catch (e) {
+      setNote({ kind: 'error', text: e.message });
+    }
+  };
 
   const send = async () => {
     if (!text.trim()) return;
@@ -62,6 +105,7 @@ export default function CoStreamScreen({ route, navigation }) {
 
   if (error) return <View style={{ flex: 1, backgroundColor: theme.bg, padding: theme.space(2) }}><Message text={error} /></View>;
   if (!session || !base) return <Loading label="Joining co-stream…" />;
+  const muted = new Set(session.muted_participants || []);
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }} testID="costream-screen" accessibilityLabel={`Co-stream ${sessionId}`}>
       <View style={styles.video}>
@@ -76,16 +120,33 @@ export default function CoStreamScreen({ route, navigation }) {
         </View>
         <View style={styles.people}>
           {session.active_participants.map((p) => (
-            <View key={p} style={styles.person} accessibilityLabel={`${p}${p === session.active_host ? ', host' : ''}`}>
-              <TeamBadge id={p} name={p.replace('player-', '').replace('-', ' ')} size={34} />
-              <Text style={styles.personText} numberOfLines={1}>{p === session.active_host ? '★ host' : p.replace('player-', '')}</Text>
+            <View key={p} style={styles.person}
+              accessibilityLabel={`${p}${p === session.active_host ? ', host' : ''}${muted.has(p) ? ', muted' : ''}${p === session.spotlight ? ', in spotlight' : ''}`}>
+              <TeamBadge id={p} name={short(p).replace('-', ' ')} size={34} />
+              <Text style={styles.personText} numberOfLines={1}>
+                {p === session.active_host ? '★ host' : short(p)}{muted.has(p) ? ' 🔇' : ''}{p === session.spotlight ? ' ◎' : ''}
+              </Text>
+              {isHost && p !== session.active_host ? (
+                <View style={styles.controls}>
+                  <SmallButton title={muted.has(p) ? `Unmute ${short(p)}` : `Mute ${short(p)}`} onPress={() => control(muted.has(p) ? 'unmute' : 'mute', p)} />
+                  <SmallButton title={`Spotlight ${short(p)}`} onPress={() => control('spotlight', p)} />
+                  <SmallButton title={`Remove ${short(p)}`} tone={theme.dangerText} onPress={() => control('kick', p)} />
+                </View>
+              ) : null}
             </View>
           ))}
         </View>
+        {isHost && session.participant_count < 4 ? (
+          <View style={styles.compose}>
+            <TextInput value={guestId} onChangeText={setGuestId} placeholder="Athlete id to invite, e.g. player-beta-2"
+              placeholderTextColor={theme.muted} style={styles.input} autoCapitalize="none" accessibilityLabel="Athlete to invite" />
+            <Button title="Invite" variant="accent" onPress={() => guestId.trim() && control('invite', guestId.trim())} />
+          </View>
+        ) : null}
       </View>
       <Text style={styles.h}>LIVE CHAT</Text>
       <FlatList style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: theme.space(2) }} data={messages}
-        keyExtractor={(m) => String(m.seq || m.message_id)}
+        keyExtractor={(m) => String(m.message_id || m.seq)}
         ListEmptyComponent={<Text style={styles.meta}>No messages yet — say hello!</Text>}
         renderItem={({ item }) => (
           <Text style={styles.msg} accessibilityLabel={`chat: ${item.sender} says ${item.text}`}>
@@ -115,6 +176,9 @@ const styles = StyleSheet.create({
   people: { flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.space(1.5) },
   person: { width: '25%', alignItems: 'center' },
   personText: { color: theme.text, fontSize: 12, marginTop: 4 },
+  controls: { marginTop: 4, alignSelf: 'stretch', paddingHorizontal: 2 },
+  small: { minHeight: theme.touch, borderWidth: 1, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  smallText: { fontSize: 11, fontWeight: '800' },
   h: { fontSize: 12, fontWeight: '900', color: theme.muted, letterSpacing: 2, margin: theme.space(2), marginBottom: theme.space(1) },
   msg: { color: theme.text, fontSize: theme.font.body, paddingVertical: 6 },
   sender: { color: theme.accent, fontWeight: '800' },

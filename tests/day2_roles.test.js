@@ -51,6 +51,19 @@ test('viewer: browse clubs, view athletes in tenant only, idempotent follow / un
   assert.strictEqual((await h.call('POST', '/api/v1/athletes/player-alpha-1/follow', {}, 'guest_anon_tok_7721')).status, 403);
 });
 
+test('follow burst: simultaneous follow / unfollow toggles never drift the follower count', async () => {
+  const users = ['viewer', 'manager', 'admin'];
+  const burst = [];
+  for (let i = 0; i < 45; i += 1) burst.push(h.call('POST', '/api/v1/athletes/player-alpha-2/follow', { follow: i % 3 !== 1 }, tok[users[i % 3]]));
+  assert.ok((await Promise.all(burst)).every((r) => r.status === 200));
+  const views = await Promise.all(users.map((u) => h.call('GET', '/api/v1/athletes/player-alpha-2', undefined, tok[u])));
+  const following = views.filter((v) => v.body.following).length;
+  assert.ok(views.every((v) => v.body.followers === following));
+  const settle = await Promise.all(users.map((u) => h.call('POST', '/api/v1/athletes/player-alpha-2/follow', { follow: true }, tok[u])));
+  assert.strictEqual(Math.max(...settle.map((r) => r.body.followers)), 3);
+  assert.strictEqual((await h.call('GET', '/api/v1/athletes/player-alpha-2', undefined, tok.admin)).body.followers, 3);
+});
+
 test('go live: only athletes manage their own stream key', async () => {
   const g = await h.call('POST', '/api/v1/me/stream-key', { action: 'generate' }, tok.player);
   assert.deepStrictEqual([g.status, g.body.player_id, g.body.status], [201, 'player-alpha-1', 'active']);

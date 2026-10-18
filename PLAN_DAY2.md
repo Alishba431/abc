@@ -36,22 +36,24 @@ Backend
 - [x] Unit tests per Phase II module → `COVERAGE_DAY2.json` (streaming, costream, qr_guest, moderation_dlq, observability ≥ 85%)
 
 ## Window 3 — 12:45–13:45 (push ~13:30)
-- [ ] Guest Web Player `/web/*` (live / preview / vod / notice / players / clubs / costream) with all 9 `data-testid`s,
+- [x] Guest Web Player `/web/*` (live / preview / vod / notice / players / clubs / costream) with all 9 `data-testid`s,
       live score via WebSocket, guest cart, blocked chat → progressive auth modal → login → cart merge → back to timestamp,
       WCAG 2.1 AA (contrast, keyboard, ARIA, 48 px targets)
-- [ ] `tests/selenium/test_guest_grid.py` (3 tests, `pytest -n 3`, JUnit → `tests/reports/selenium-report.xml`)
+- [x] `tests/selenium/test_guest_grid.py` (3 spec tests + WCAG DOM test, `pytest -n 3`, JUnit → `tests/reports/selenium-report.xml`)
 - [x] `tests/k6_load.js` (exact profile) → `tests/reports/k6-summary.json`; QR state cached in memory for 550 VUs (local: 0% errors, p95 7.8 ms)
-- [ ] `.github/workflows/autograde.yml` (compose up, contract probes, grid ≥ 3 nodes, k6 smoke)
-- [ ] Mobile: `nascon://` scheme + deep links (entity/match, stream/cs-session) opening screens **without login wall**,
+- [x] `.github/workflows/autograde.yml` (compose up, contract probes, grid ≥ 3 nodes, Selenium, k6, unit tests)
+- [x] Mobile: `nascon://` scheme + deep links (entity/match, stream/cs-session) opening screens **without login wall**,
       QR scanner, co-stream view + chat, Go-Live screen (stream key / RTMP for OBS·Larix), live notifications
-- [ ] `tests/appium/test_mobile_deeplink.py` → `tests/reports/appium-report.xml`; **EAS build started by 13:15**
+- [x] `tests/appium/test_mobile_deeplink.py` (written) → `tests/reports/appium-report.xml` (needs the phone on adb); EAS builds started 12:31 / 12:39
+- [x] FR-3.3 host controls: signed invites, join, mute, spotlight, kick (`/api/v1/costream/{id}/control|join`) + app UI
+- [x] `tests/media_e2e.sh`: RTMP ingest → HLS 200 → metrics → revoke cuts ingest in 0.15 s → `tests/reports/media-e2e.json`
 
 ## Window 4 — 13:45–14:00 (final push by 13:58)
 - [ ] All reports committed, TRACEABILITY.md Phase II rows, ADR additions, APK attached via Actions, final push
 
 ## Stretch (only if ahead)
-MediaMTX auth hook so revoking a key cuts live ingest < 2 s · recording → MinIO + VOD index · follow/unfollow +
-athlete profile · real 4-way composite via FFmpeg
+~~MediaMTX auth hook so revoking a key cuts live ingest < 2 s~~ (done) · recording → MinIO + VOD index · ~~follow/unfollow +
+athlete profile~~ (done) · real 4-way composite via FFmpeg
 
 ## Questions for organizers (in writing, early)
 1. Which event moves a match to postponed / cancelled / abandoned?

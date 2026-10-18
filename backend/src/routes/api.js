@@ -302,6 +302,15 @@ r.post('/me/stream-key', wrap(async (req, res) => {
   res.status(out.status).json(out.body);
 }));
 
+// FR-3.3 host controls: signed invites, mute / unmute, spotlight, kick; invited athletes join with their token.
+r.post('/costream/:id/control', wrap(async (req, res) => {
+  const out = await require('../domain/costream').hostControl(req.user, req.params.id, req.body);
+  res.status(out.status).json(out.body);
+}));
+r.post('/costream/:id/join', wrap(async (req, res) => {
+  const out = await require('../domain/costream').joinWithInvite(req.user, req.params.id, req.body);
+  res.status(out.status).json(out.body);
+}));
 r.post('/chat', wrap(async (req, res) => {
   const out = await moderation.postChat(req.user, req.body);
   res.status(out.status).json(out.body);

@@ -7,10 +7,11 @@ export function makeLinking(isSignedIn) {
       const signedIn = isSignedIn();
       const [kind, rawId] = path.replace(/^\/+/, '').split(/[/?#]/);
       const id = decodeURIComponent(rawId || '');
+      const invite = (/[?&]invite=([^&#]+)/.exec(path) || [])[1];
       if (!id) return undefined;
       let route;
       if (kind === 'stream' || (kind === 'entity' && id.startsWith('cs-session-'))) {
-        route = { name: 'CoStream', params: { sessionId: id } };
+        route = { name: 'CoStream', params: invite ? { sessionId: id, invite: decodeURIComponent(invite) } : { sessionId: id } };
       } else if (kind === 'entity' && id.startsWith('club-')) {
         route = signedIn ? { name: 'ClubDetail', params: { clubId: id, title: 'Club' } } : { name: 'Web', params: { path: `/web/clubs/${id}`, title: 'Club' } };
       } else if (kind === 'entity' && id.startsWith('player-')) {

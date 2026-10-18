@@ -171,7 +171,7 @@
   var seen = {};
   function addMessage(m) {
     if (!list || !m) return;
-    var key = m.chat_room_id + ':' + (m.seq || m.message_id);
+    var key = m.chat_room_id + ':' + (m.message_id || m.seq);
     if (seen[key]) return;
     seen[key] = true;
     var li = document.createElement('li');

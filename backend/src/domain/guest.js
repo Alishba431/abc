@@ -9,7 +9,7 @@ const { isObj } = require('../validate');
 const WRITE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const GUEST_ALLOWED = [/^\/api\/v1\/guest\/(token|cart)$/];
 const MEMBER_WRITES = [/^\/api\/v1\/(chat|events|store\/checkout|roster\/transfer|offline-sync|guest\/cart\/merge)$/,
-  /^\/api\/v1\/athletes\/[^/]+\/follow$/];
+  /^\/api\/v1\/athletes\/[^/]+\/follow$/, /^\/api\/v1\/costream\/[^/]+\/(control|join)$/];
 
 function guestTokenOf(req) {
   const m = /^Bearer\s+(\S+)\s*$/i.exec((req.headers && req.headers.authorization) || '');
