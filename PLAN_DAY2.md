@@ -9,18 +9,18 @@ HTTP 201/200 as specified, honour `stream_key_override`, `DAY2_SALT` read from e
 
 ## Window 1 — until 11:30 (push by 11:20)
 Infra (docker-compose.yml)
-- [ ] `minio` → `bitnamilegacy/minio:2024.9.22` (`minio/minio` no longer exists on Docker Hub)
-- [ ] `mediamtx` → `bluenviron/mediamtx:1.9.1` on 1935 (RTMP) / 8888 (HLS) / 8889 (WebRTC), API enabled internally
-- [ ] Selenium Grid 4: hub (4444/4442/4443) + node-chrome ×2 + node-firefox, `shm_size: "1gb"`, `SE_START_VNC=false`
+- [x] `minio` → `bitnamilegacy/minio:2024.9.22` (`minio/minio` no longer exists on Docker Hub)
+- [x] `mediamtx` → `bluenviron/mediamtx:1.9.1` on 1935 (RTMP) / 8888 (HLS) / 8889 (WebRTC), API enabled internally
+- [x] Selenium Grid 4: hub (4444/4442/4443) + node-chrome ×2 + node-firefox, `shm_size: "1gb"`, `SE_START_VNC=false`
       (use pre-pulled 4.24.0), api reachable as `http://backend:8080` (network alias)
-- [ ] forward `DAY1_SALT` and `DAY2_SALT`; `/health` checks DB + Redis + media server + seed
+- [x] forward `DAY1_SALT` and `DAY2_SALT`; `/health` checks DB + Redis + media server + seed
 Backend
-- [ ] DAY2 signer (same canonical JSON, key = `DAY2_SALT`) + Appendix A vector test
-- [ ] `/reset` Day 2 seed: `player-beta-2`, `match-m1` (in_progress 1-0), QR maps (`m1-live`, `p-alpha-1`, `c-alpha-1`),
+- [x] DAY2 signer (same canonical JSON, key = `DAY2_SALT`) + Appendix A vector test
+- [x] `/reset` Day 2 seed: `player-beta-2`, `match-m1` (in_progress 1-0), QR maps (`m1-live`, `p-alpha-1`, `c-alpha-1`),
       `guest_anon_tok_7721`, empty cart for `player-alpha-1`
-- [ ] `POST /audit/v1/stream/key` (generate / rotate / revoke, override, 404 STREAM_NOT_FOUND, KEY_REVOKED)
-- [ ] `POST /audit/v1/costream/session` (exact validation order, host-drop handoff, idempotent replay)
-- [ ] `GET /metrics` (5 Prometheus metrics, `text/plain; version=0.0.4`)
+- [x] `POST /audit/v1/stream/key` (generate / rotate / revoke, override, 404 STREAM_NOT_FOUND, KEY_REVOKED)
+- [x] `POST /audit/v1/costream/session` (exact validation order, host-drop handoff, idempotent replay)
+- [x] `GET /metrics` (5 Prometheus metrics, `text/plain; version=0.0.4`)
 
 ## Window 2 — 11:30–12:45 (push ~12:05 and ~12:40)
 - [ ] QR engine: `GET /audit/v1/qr/{id}` (+`?inspect=true`), state-driven `target_route`, DAY2 signature, scan telemetry

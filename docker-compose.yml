@@ -10,6 +10,7 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
   redis:
     image: redis:7-alpine
     healthcheck:
@@ -17,22 +18,62 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  # S3-compatible object store for stream recordings / VOD (minio/minio is no longer published on Docker Hub).
+  minio:
+    image: bitnamilegacy/minio:2024.9.22
+    environment:
+      MINIO_ROOT_USER: nascon
+      MINIO_ROOT_PASSWORD: nascon-minio-secret
+      MINIO_DEFAULT_BUCKETS: recordings
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  # Self-hosted media server: RTMP ingest 1935, HLS 8888, WebRTC WHIP/WHEP 8889 (+ 8189/udp for media).
+  mediamtx:
+    image: bluenviron/mediamtx:1.9.1
+    environment:
+      MTX_API: "yes"
+      MTX_AUTHMETHOD: http
+      MTX_AUTHHTTPADDRESS: http://api:8080/internal/media/auth
+      MTX_WEBRTCADDITIONALHOSTS: ${MEDIA_LAN_IP:-}
+    ports:
+      - "1935:1935"
+      - "8888:8888"
+      - "8889:8889"
+      - "8189:8189/udp"
+
   api:
     build: ./backend
     ports:
       - "8080:8080"
     environment:
       DAY1_SALT: ${DAY1_SALT}
+      DAY2_SALT: ${DAY2_SALT}
       JWT_SECRET: ${JWT_SECRET:-change-me-local-jwt-secret}
       DATABASE_URL: postgres://nascon:nascon@postgres:5432/nascon
       REDIS_URL: redis://redis:6379
+      MEDIA_API_URL: http://mediamtx:9997
+      MEDIA_PUBLIC_HOST: ${MEDIA_PUBLIC_HOST:-localhost}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: nascon
+      MINIO_ROOT_PASSWORD: nascon-minio-secret
       PORT: "8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mediamtx:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      default:
+        aliases: [backend]
     restart: unless-stopped
+
   worker:
     build: ./backend
     command: ["node", "src/worker.js"]
@@ -42,3 +83,51 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+
+  # Selenium Grid 4: hub on 4444 + 3 browser nodes (shm 1 GB, no VNC) for the Guest Web Player suite.
+  selenium-hub:
+    image: selenium/hub:4.24.0
+    container_name: nascon-selenium-hub
+    ports:
+      - "4444:4444"
+      - "4442:4442"
+      - "4443:4443"
+
+  node-chrome-1:
+    image: selenium/node-chrome:4.24.0
+    shm_size: "1gb"
+    depends_on: [selenium-hub]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=2
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_START_VNC=false
+
+  node-chrome-2:
+    image: selenium/node-chrome:4.24.0
+    shm_size: "1gb"
+    depends_on: [selenium-hub]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=2
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_START_VNC=false
+
+  node-firefox:
+    image: selenium/node-firefox:4.24.0
+    shm_size: "1gb"
+    depends_on: [selenium-hub]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=2
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_START_VNC=false

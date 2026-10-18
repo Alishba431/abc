@@ -43,4 +43,6 @@ function broadcast(type, data) {
   for (const s of clients) { try { s.write(f); } catch (_) { clients.delete(s); } }
 }
 
-module.exports = { attach, broadcast, frame };
+const connectionCount = () => clients.size;
+
+module.exports = { attach, broadcast, frame, connectionCount };

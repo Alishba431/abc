@@ -28,8 +28,13 @@ function sign(id, payload, key = salt()) {
     .digest('hex');
 }
 
+// Phase II records are signed with the Day 2 salt (same canonical JSON, same "id|payload" message).
+function signDay2(id, payload) {
+  return sign(id, payload, process.env.DAY2_SALT || '');
+}
+
 function sha256hex(s) {
   return crypto.createHash('sha256').update(Buffer.from(s, 'utf8')).digest('hex');
 }
 
-module.exports = { canonical, sign, sha256hex, cpCompare };
+module.exports = { canonical, sign, signDay2, sha256hex, cpCompare };

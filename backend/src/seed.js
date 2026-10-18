@@ -1,6 +1,7 @@
 const { pool, SCHEMA, WIPE, tx } = require('./db');
 const { hashPassword } = require('./auth');
 const { seedDemo, seedDemoRoster } = require('./demo');
+const { seedDay2 } = require('./seed_day2');
 
 // Seed sports are ordinary data (same schema as POST /audit/v1/sports).
 const SEED_SPORTS = [
@@ -87,6 +88,7 @@ async function seed(c, { seed: lotsSeed = 42, stock = {} } = {}) {
   await q('INSERT INTO discount_codes(code, percent) VALUES ($1,$2)', ['WELCOME10', 10]);
   await seedDemo(c, lotsSeed);
   await seedDemoRoster(c);
+  await seedDay2(c);
   return {
     status: 'reset_complete', seed: lotsSeed,
     sports: SEED_SPORTS.map((s) => s.sport_id), tenants: TENANTS.map((t) => t.id),

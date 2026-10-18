@@ -4,6 +4,8 @@ const { Client } = require('pg');
 
 process.env.DAY1_SALT = process.env.DAY1_SALT || 'test-salt';
 process.env.JWT_SECRET = 'test-jwt-secret';
+// Part II Appendix A reference salt, so tests can assert the published signature vectors exactly.
+process.env.DAY2_SALT = process.env.DAY2_SALT || 'T01D27ad7ffff12e';
 
 async function start(name) {
   const admin = process.env.TEST_ADMIN_URL || 'postgres://nascon:nascon@postgres:5432/nascon';

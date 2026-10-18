@@ -6,20 +6,46 @@ const { rateLimit } = require('./ratelimit');
 const { resetAll } = require('./seed');
 const audit = require('./routes/audit');
 const api = require('./routes/api');
+const media = require('./media');
+const metrics = require('./metrics');
+const { redis } = require('./queue');
+const { authorizeIngest } = require('./domain/streaming');
 
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', false);
 app.use(express.json({ limit: '1mb', strict: false, type: () => true }));
 
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+// Ready only when the database is seeded and (when configured) Redis and the media server answer.
 app.get('/health', wrap(async (req, res) => {
   try {
     const r = await pool.query("SELECT 1 FROM meta WHERE key = 'seeded'");
     if (r.rowCount === 0) return res.status(503).json({ status: 'starting' });
-    res.json({ status: 'ok' });
   } catch (e) {
-    res.status(503).json({ status: 'db_unavailable' });
+    return res.status(503).json({ status: 'db_unavailable' });
   }
+  if (process.env.REDIS_URL) {
+    try { await withTimeout(redis().ping(), 1000); } catch (e) { return res.status(503).json({ status: 'redis_unavailable' }); }
+  }
+  if (!(await media.healthy())) return res.status(503).json({ status: 'media_unavailable' });
+  res.json({ status: 'ok' });
+}));
+
+app.get('/metrics', wrap(async (req, res) => {
+  const body = await metrics.render();
+  res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+  res.end(body);
+}));
+
+// MediaMTX HTTP auth hook: publishing to live/{key} requires an active (non-revoked) stream key.
+app.post('/internal/media/auth', wrap(async (req, res) => {
+  const b = req.body || {};
+  if (b.action !== 'publish') return res.status(200).end();
+  const out = await authorizeIngest(b.path);
+  if (out.ok) return res.status(200).end();
+  res.status(out.status).json({ error: { code: out.code, message: 'Stream key is not valid for publishing.', details: { path: b.path } } });
 }));
 
 app.use('/audit/v1', audit);

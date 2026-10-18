@@ -13,6 +13,8 @@ const { authorize } = require('../domain/rbac');
 const roster = require('../domain/roster');
 const { offlineSync } = require('../domain/offline');
 const { signJwt, bearer } = require('../auth');
+const { streamKey } = require('../domain/streaming');
+const { costreamSession } = require('../domain/costream');
 
 const r = express.Router();
 
@@ -100,5 +102,16 @@ r.get('/rbac/clubs/:id', probe('club:read', 'club', 'id'));
 r.get('/rbac/platform/config', probe('platform:config:read'));
 
 r.post('/offline-sync', wrap(async (req, res) => res.status(200).json(await offlineSync(req.body))));
+
+// ---------- Phase II ----------
+r.post('/stream/key', wrap(async (req, res) => {
+  const out = await streamKey(req.body);
+  res.status(out.status).json(out.body);
+}));
+
+r.post('/costream/session', wrap(async (req, res) => {
+  const out = await costreamSession(req.body);
+  res.status(out.status).json(out.body);
+}));
 
 module.exports = r;
