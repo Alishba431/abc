@@ -1,0 +1,3 @@
+# QA runner image for the Selenium Grid suite (built once, reused locally and in CI).
+FROM python:3.12-slim
+RUN pip install --no-cache-dir --retries 20 --timeout 600 selenium==4.24.0 pytest==8.3.3 pytest-xdist==3.6.1 requests==2.32.3

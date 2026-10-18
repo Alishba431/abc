@@ -59,6 +59,7 @@ app.get('/q/:code', wrap(async (req, res) => {
   res.redirect(302, v.target_route);
 }));
 
+app.use('/web', require('./web'));
 app.use('/audit/v1', audit);
 app.use('/api/v1', rateLimit, api);
 

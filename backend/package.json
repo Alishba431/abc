@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "express": "4.21.1",
+    "hls.js": "1.5.17",
     "ioredis": "5.4.1",
     "pg": "8.13.1",
     "qrcode": "1.5.4"

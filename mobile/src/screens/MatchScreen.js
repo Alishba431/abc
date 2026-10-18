@@ -18,10 +18,12 @@ const EVENT = {
 export default function MatchScreen({ route, navigation }) {
   const { matchId } = route.params;
   const { user } = useAuth();
-  const canScore = user.role === 'league_organizer' || user.role === 'super_admin';
-  const q = useCached('match:' + matchId, `/api/v1/matches/${matchId}`, { pollMs: 3000, live: matchId });
+  const canScore = !!user && (user.role === 'league_organizer' || user.role === 'super_admin');
+  // Guests (deep link / QR, no account) read the public view; members get the full match view.
+  const path = user ? `/api/v1/matches/${matchId}` : `/api/v1/public/matches/${matchId}`;
+  const q = useCached((user ? 'match:' : 'public-match:') + matchId, path, { pollMs: 3000, live: matchId });
   if (q.loading) return <Loading label="Loading match…" />;
-  if (!q.data) return <Message text={q.error} />;
+  if (!q.data) return <View style={{ flex: 1, backgroundColor: theme.bg, padding: theme.space(2) }}><Message text={q.error} /></View>;
   const m = q.data;
   const names = { [m.home.team_id]: m.home.name, [m.away.team_id]: m.away.name };
   const describe = (e) => {
@@ -55,7 +57,12 @@ export default function MatchScreen({ route, navigation }) {
         <Text style={styles.comp}>ALPHA PREMIER LEAGUE</Text>
       </View>
 
+      {live ? (
+        <Button title="▶  Watch live" variant="accent" accessibilityHint="Opens the live video, score and chat"
+          onPress={() => navigation.navigate('Web', { path: `/web/matches/${matchId}/live`, title: 'Watch live' })} />
+      ) : null}
       {canScore ? <Button title="Record score / correct event" variant="accent" onPress={() => navigation.navigate('Scoring', { matchId })} /> : null}
+      {!user ? <Message kind="info" text="You're watching as a guest. Sign in to chat, follow athletes and shop." /> : null}
 
       <Text style={styles.h} accessibilityRole="header">MATCH CENTRE</Text>
       <Card>
@@ -88,7 +95,8 @@ export default function MatchScreen({ route, navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.product}>{m.pinned_product.name}</Text>
               <Text style={styles.price}>{money(Math.min(...m.pinned_product.variants.map((v) => v.price_minor)))}</Text>
-              <Button title="Shop now" onPress={() => navigation.navigate('Main', { screen: 'Store' })} />
+              <Button title={user ? 'Shop now' : 'Sign in to shop'}
+                onPress={() => (user ? navigation.navigate('Main', { screen: 'Store' }) : navigation.navigate('Login'))} />
             </View>
           </Card>
         </>

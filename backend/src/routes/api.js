@@ -61,11 +61,33 @@ r.get('/public/matches/:id', wrap(async (req, res) => {
   const prod = await pool.query('SELECT id, data FROM products WHERE id = $1', ['prod-jersey-001']);
   const variants = await pool.query('SELECT id, price_minor, stock, data FROM variants WHERE product_id = $1 ORDER BY id', ['prod-jersey-001']);
   res.json({
-    match_id: s.match_id, status: s.status, league_id: s.league_id, version: s.version,
+    match_id: s.match_id, status: s.status, league_id: s.league_id, version: s.version, events: s.events, outcome: s.outcome,
     home: { ...s.home, name: teamName(s.home.team_id) }, away: { ...s.away, name: teamName(s.away.team_id) },
     pinned_product: prod.rowCount ? { product_id: 'prod-jersey-001', ...prod.rows[0].data,
       variants: variants.rows.map((v) => ({ variant_id: v.id, price_minor: v.price_minor, stock: v.stock, ...v.data })) } : null,
   });
+}));
+// Mobile QR scanner: resolve a short code to the entity it points at (counts as a scan).
+// Matches on air right now, for the guest "Live now" list on the mobile sign-in screen.
+r.get('/public/live', wrap(async (req, res) => {
+  const ms = (await pool.query('SELECT id FROM matches ORDER BY ord')).rows;
+  const out = [];
+  for (const m of ms) {
+    const s = await scoreView(m.id);
+    if (s.status !== 'in_progress') continue;
+    out.push({ match_id: s.match_id, status: s.status,
+      home: { ...s.home, name: teamName(s.home.team_id) }, away: { ...s.away, name: teamName(s.away.team_id) } });
+  }
+  res.json(out);
+}));
+r.get('/public/qr/:code', wrap(async (req, res) => {
+  const v = await require('../domain/qr').resolveShortCode(req.params.code, req.get('user-agent'));
+  res.json({ entity_id: v.entity_id, entity_type: v.entity_type, entity_status: v.entity_status, target_route: v.target_route });
+}));
+r.get('/public/costream/:id', wrap(async (req, res) => {
+  const s = await require('../domain/costream').getSession(req.params.id);
+  if (!s) throw err(404, 'STREAM_NOT_FOUND', 'That co-stream does not exist.', { session_id: req.params.id });
+  res.json(s);
 }));
 r.get('/public/chat/:room', wrap(async (req, res) => res.json({ chat_room_id: req.params.room, messages: await moderation.history(req.params.room) })));
 // SSE alternative to the per-match WebSocket (NFR-1).

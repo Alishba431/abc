@@ -35,13 +35,21 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "League Ops uses the camera to scan match and stream QR codes.",
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "extra": {
       "eas": {
         "projectId": "860a1e85-f95b-475a-8307-e0ee8f7d59dc"
       }
     },
-    "owner": "alishbar"
+    "owner": "alishbar",
+    "scheme": "nascon"
   }
 }
