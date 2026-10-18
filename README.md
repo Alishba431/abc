@@ -47,6 +47,17 @@ Appium (phone on USB with debugging on, League Ops APK installed, app Server set
 CI: `.github/workflows/autograde.yml` runs compose, the contract probes, the Grid check, Selenium, k6 and the unit
 tests on every push to `main`, with fresh salts per run.
 
+## Phase II verification (local runs, Oct 18)
+| Check | Result |
+|---|---|
+| Cold `docker compose up -d --build` | `/health` 200 in 6 s; Grid ready with 3 nodes in 8 s |
+| `tests/contract_probes.py` (all `/audit/v1` contracts + DAY2 signatures) | 0 failures |
+| Unit tests `./run_tests.sh` | 64 / 64 pass · `COVERAGE_DAY2.json` all ≥ 97 % |
+| Selenium Grid (`pytest -n 3`, Chrome + Firefox) | 8 / 8 pass → `tests/reports/selenium-report.xml` |
+| k6 exact profile (500 + 50 VUs, 15 s) | 0 % failures over 69,370 requests, p95 22 ms → `tests/reports/k6-summary.json` |
+| Media e2e (`tests/media_e2e.sh`) | HLS 200 · revoke cuts ingest in 0.15 s · VOD indexed 2.8 s after the stream ends → `tests/reports/media-e2e.json` |
+| Co-stream host drop over WebSocket | next participant hosts; guest page shows the new host 0.86 s after the drop |
+
 ## Architecture
 - `backend/src/domain/` — fixtures, scoring (event sourcing), standings, roster, store, RBAC, offline sync
 - `backend/src/routes/audit.js` — autograder contract `/audit/v1/*`; `routes/api.js` — app routes `/api/v1/*` (JWT, rate limited)

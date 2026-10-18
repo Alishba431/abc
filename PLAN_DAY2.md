@@ -49,7 +49,7 @@ Backend
 - [x] `tests/media_e2e.sh`: RTMP ingest → HLS 200 → metrics → revoke cuts ingest in 0.15 s → `tests/reports/media-e2e.json`
 
 ## Window 4 — 13:45–14:00 (final push by 13:58)
-- [ ] All reports committed, TRACEABILITY.md Phase II rows, ADR additions, APK attached via Actions, final push
+- [x] All reports committed, TRACEABILITY.md Phase II rows, ADR additions, APK attached via Actions (GitHub Releases), final push
 
 ## Stretch (only if ahead)
 ~~MediaMTX auth hook so revoking a key cuts live ingest < 2 s~~ (done) · recording → MinIO + VOD index · ~~follow/unfollow +
