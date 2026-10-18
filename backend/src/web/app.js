@@ -81,6 +81,13 @@
     });
   }
 
+  // ---------- WebRTC (WHEP) playback, served by the media server, for the lowest latency ----------
+  var rtcWrap = $('webrtcwrap');
+  if (rtcWrap && P.stream_path) {
+    $('webrtclink').href = location.protocol + '//' + location.hostname + ':8889/' + P.stream_path;
+    rtcWrap.hidden = false;
+  }
+
   // ---------- video (HLS from the self-hosted media server) ----------
   var video = $('video');
   function startVideo() {

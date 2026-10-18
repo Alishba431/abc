@@ -92,6 +92,7 @@ function livePlayer({ home, away, statusLabel, room, label }) {
     </div>
     <p class="video-note" id="videonote" role="status">Waiting for the broadcaster to go live…</p>
   </div>
+  <p id="webrtcwrap" hidden><a id="webrtclink" class="btn btn-ghost" href="#">Watch with WebRTC (lower latency)</a></p>
 </section>
 <section class="grid2">
   <div data-testid="pinned-merch-card" class="card merch" aria-labelledby="merch-title">
